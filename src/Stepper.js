@@ -1,19 +1,20 @@
 import React from 'react';
+import './Stepper.css'; // Import custom CSS for styling
 
 const Stepper = ({ steps, currentStep }) => {
   return (
-    <ul className="nav nav-pills">
+    <div className="stepper-container">
       {steps.map((step, index) => (
-        <li key={index} className="nav-item">
-          <button
-            className={`nav-link ${index === currentStep ? 'active' : ''}`}
-            disabled={index !== currentStep}
-          >
-            {step}
-          </button>
-        </li>
+        <div
+          key={index}
+          className={`stepper-item ${index <= currentStep ? 'active' : ''}`}
+        >
+          <div className="step-number">{index + 1}</div>
+          <div className="step-name">{step}</div>
+          {index < steps.length - 1 && <div className="stepper-line"></div>}
+        </div>
       ))}
-    </ul>
+    </div>
   );
 };
 

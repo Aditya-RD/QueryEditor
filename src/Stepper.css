@@ -1,0 +1,57 @@
+.stepper-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  .stepper-item {
+    display: flex;
+    align-items: center;
+    position: relative;
+    flex-direction: column;
+    text-align: center;
+    flex: 1;
+  }
+  
+  .stepper-item .step-number {
+    background-color: #ccc;
+    color: #fff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  
+  .stepper-item.active .step-number {
+    background-color: #0d6efd; /* Bootstrap primary color */
+  }
+  
+  .stepper-item .step-name {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .stepper-item.active .step-name {
+    font-weight: bold;
+    color: #0d6efd; /* Bootstrap primary color */
+  }
+  
+  .stepper-line {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    height: 2px;
+    width: 100%;
+    background-color: #ccc;
+    z-index: -1;
+  }
+  
+  .stepper-item.active ~ .stepper-line {
+    background-color: #0d6efd; /* Change line color for active steps */
+  }
+  

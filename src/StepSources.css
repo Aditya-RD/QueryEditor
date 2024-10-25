@@ -1,0 +1,47 @@
+.source-selection-container {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #f8f9fa;
+  }
+  
+  .header {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .search-bar {
+    margin-bottom: 15px;
+  }
+  
+  .source-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .source-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .source-item:last-child {
+    border-bottom: none;
+  }
+  
+  .form-check-input {
+    margin-right: 10px;
+    margin-left: 0;
+  }
+  
+  .source-icon {
+    font-size: 20px;
+    margin-right: 8px;
+  }
+  
+  .footer {
+    display: flex;
+    justify-content: space-between;
+  }
+  
