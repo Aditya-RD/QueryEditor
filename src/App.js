@@ -63,7 +63,7 @@ const MultiStepForm = ({ steps, optionType }) => {
   return (
     <div>
       <Stepper steps={steps} currentStep={currentStepIndex} />
-      <div className="step-content">{renderStepContent()}</div>
+      <div className="step-content" style={{ height: '500px' }}>{renderStepContent()}</div>
       <div className="mt-3">
         {currentStepIndex > 0 && (
           <button className="btn btn-secondary me-2" onClick={handlePrevious}>

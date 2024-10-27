@@ -1,0 +1,106 @@
+/* FlexiSplit.css */
+
+/* Container styles */
+.vertical-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.horizontal-container {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+}
+
+/* Panel styles */
+.splitter-panel {
+    overflow: auto;
+    box-sizing: border-box;
+    flex-grow: 1;
+}
+
+/* Gutter styles */
+.gutter {
+    background-color: #ccc;
+    position: relative;
+    z-index: 1;
+}
+
+.gutter-vertical {
+    cursor: ns-resize;
+    height: 10px;
+    width: 100%;
+}
+
+.gutter-horizontal {
+    cursor: ew-resize;
+    width: 10px;
+    height: 100%;
+}
+
+/* Collapse button styling */
+.gutter-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    background-color: #0e2c63;
+    color: white;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    padding: 2px 6px 3px 6px;
+    border-radius: 15px;
+}
+
+.gutter-button:hover {
+    background-color: #005f8b;
+}
+
+.gutter-disabled {
+    cursor: not-allowed !important;
+}
+
+/* Arrow styles for collapse/expand button */
+i.fs-arrow {
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 3px;
+}
+
+i.fs-arrow-right {
+  transform: rotate(-45deg);
+}
+
+i.fs-arrow-left {
+  transform: rotate(135deg);
+}
+
+i.fs-arrow-up {
+  transform: rotate(-135deg);
+}
+
+i.fs-arrow-down {
+  transform: rotate(45deg);
+}
+
+.gutter-button.fs-arrow-right {
+  padding: 2px 7px 3px 4px;
+}
+
+.gutter-button.fs-arrow-left {
+  padding: 2px 4px 3px 7px;
+}
+
+.gutter-button.fs-arrow-up {
+  padding: 4px 6px 1px 6px;
+}
+
+.gutter-button.fs-arrow-down {
+  padding: 1px 6px 4px 6px;
+}
