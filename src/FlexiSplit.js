@@ -53,7 +53,7 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
   const createGutterButton = () => {
     const button = document.createElement('button');
     button.className = 'gutter-button';
-    const arrowDirection = options.direction === 'vertical' ? 'fs-arrow-down' : 'fs-arrow-left';
+    const arrowDirection = options.direction === 'vertical' ? 'fs-arrow-down' : 'fs-arrow-right';
     button.innerHTML = `<i title="Collapse" class="fs-arrow ${arrowDirection}"></i>`;
     button.addEventListener('click', toggleCollapse);
     gutterRef.current.appendChild(button);
@@ -66,8 +66,8 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
       splitInstanceRef.current.setSizes([100, 0]);
       panel2Ref.current.style.display = 'none';
     } else {
-      splitInstanceRef.current.setSizes([0, 100]);
-      panel1Ref.current.style.display = 'none';
+      splitInstanceRef.current.setSizes([100, 0]);
+      panel2Ref.current.style.display = 'none';
     }
 
     // Add 'gutter-disabled' to gutter only, not the button
@@ -95,7 +95,7 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
   };
 
   const updateButtonIcon = (direction, action) => {
-    const arrowDir = direction === 'vertical' ? (action === 'expand' ? 'fs-arrow-up' : 'fs-arrow-down') : (action === 'expand' ? 'fs-arrow-right' : 'fs-arrow-left');
+    const arrowDir = direction === 'vertical' ? (action === 'expand' ? 'fs-arrow-up' : 'fs-arrow-down') : (action === 'expand' ? 'fs-arrow-left' : 'fs-arrow-right');
     buttonRef.current.className = `gutter-button ${arrowDir}`;
     buttonRef.current.innerHTML = `<i title="${action === 'expand' ? 'Expand' : 'Collapse'}" class="fs-arrow ${arrowDir}"></i>`;
   };

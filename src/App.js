@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import SelectOption from './SelectOptions';
 import Stepper from './Stepper';
@@ -13,7 +13,7 @@ const App = () => {
 
   return (
     <Router>
-      <div className="container">
+      <div className="container-fluid">
         <Routes>
           <Route path="/" element={<SelectOption />} />
           <Route
@@ -32,17 +32,23 @@ const App = () => {
 };
 
 const MultiStepForm = ({ steps, optionType }) => {
+  const [selectedSource, setSelectedSource] = useState({}); // State for selected source
   const navigate = useNavigate();
-  const { '*': stepParam } = useParams(); // Get the current step from the URL
+  const { '*': stepParam } = useParams();
   const currentStepIndex = steps.findIndex(step => step.toLowerCase() === (stepParam || steps[0]).toLowerCase());
 
   const renderStepContent = () => {
     switch (steps[currentStepIndex]) {
-      case 'Sources': return <StepSources />;
-      case 'Prompt': return <StepPrompt />;
-      case 'Query': return <StepQuery />;
-      case 'Details': return <StepDetails />;
-      default: return null;
+      case 'Sources':
+        return <StepSources selectedSource={selectedSource} setSelectedSource={setSelectedSource} onNext={handleNext} />;
+      case 'Query':
+        return <StepQuery selectedSource={selectedSource} />;
+      case 'Details':
+        return <StepDetails />;
+      case 'Prompt':
+        return <StepPrompt />;
+      default:
+        return null;
     }
   };
 
@@ -64,13 +70,13 @@ const MultiStepForm = ({ steps, optionType }) => {
     <div>
       <Stepper steps={steps} currentStep={currentStepIndex} />
       <div className="step-content" style={{ height: '500px' }}>{renderStepContent()}</div>
-      <div className="mt-3">
+      <div className="mt-3 text-end">
         {currentStepIndex > 0 && (
           <button className="btn btn-secondary me-2" onClick={handlePrevious}>
             Previous
           </button>
         )}
-        {currentStepIndex < steps.length - 1 && (
+        {currentStepIndex < steps.length - 1 && steps[currentStepIndex] !== 'Sources' && (
           <button className="btn btn-primary" onClick={handleNext}>
             Next
           </button>
