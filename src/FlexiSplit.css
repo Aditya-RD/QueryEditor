@@ -53,7 +53,8 @@
     border: none;
     cursor: pointer;
     outline: none;
-    padding: 2px 6px 3px 6px;
+    padding: 6px;
+    display:flex;
     border-radius: 15px;
 }
 
@@ -89,7 +90,7 @@ i.fs-arrow-down {
   transform: rotate(45deg);
 }
 
-.gutter-button.fs-arrow-right {
+/* .gutter-button.fs-arrow-right {
   padding: 2px 7px 3px 4px;
 }
 
@@ -103,4 +104,4 @@ i.fs-arrow-down {
 
 .gutter-button.fs-arrow-down {
   padding: 1px 6px 4px 6px;
-}
+} */
