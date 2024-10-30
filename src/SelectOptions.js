@@ -1,41 +1,18 @@
-// import React from 'react';
-// import { useNavigate } from 'react-router-dom';
- 
-// const SelectOption = () => {
-//   const navigate = useNavigate();
- 
-//   const handleOptionSelect = (option) => {
-//     if (option === 1) {
-//       navigate('/custom-query/sources'); // Navigate to the first step of the custom query
-//     } else if (option === 2) {
-//       navigate('/gen-ai/sources'); // Navigate to the first step of the Gen AI option
-//     }
-//   };
- 
-//   return (
-//     <div className="container">
-//       <h2>Select an Option</h2>
-//       <button className="btn btn-primary m-2" onClick={() => handleOptionSelect(1)}>
-//         Create Custom Query
-//       </button>
-//       <button className="btn btn-secondary m-2" onClick={() => handleOptionSelect(2)}>
-//         Create Query using Gen AI
-//       </button>
-//     </div>
-//   );
-// };
- 
-// export default SelectOption;
- 
 import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Typography, Button, TextField, IconButton, Avatar, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+//import SyncIcon from '@mui/icons-material/Sync';
+// import CloudIcon from '@mui/icons-material/Cloud';
+// import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+// import HomeIcon from '@mui/icons-material/Home';
+// import LockIcon from '@mui/icons-material/Lock';
 import CodeIcon from '@mui/icons-material/Code';
-import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
+import magicwand from './magic-wand.png';
+// import Header from './Headerpage';
  
 const initialRows  = [
   { id: 1, name: 'SalesforceAndHubspotAccounts', createdBy: 'Nidhi', createdOn: '24-Dec-2023, 7:30 AM', modifiedBy: 'Nidhi', modifiedOn: '28-Jan-2024,  8:34 AM' },
@@ -123,12 +100,25 @@ function App() {
   };
  
   return (
-    <Box display="flex" height="100%" bgcolor="#f9fafb">
+    <Box display="flex" height="100vh" bgcolor="#f9fafb" className="p-0">
+      {/* Header Section */}
+      {/* <Header /> Add the Header component here */}
+      {/* Sidebar */}
+      {/* <Box display="flex" flex={1} sx={{position: 'absolute', top: '40px', width: '100%'}}>
+      <Box width="50px" bgcolor="#f5f5f5" display="flex" flexDirection="column" alignItems="center" paddingY={2} sx={{borderRight: '2px solid #ddd'}}>
+        <IconButton><HomeIcon /></IconButton>
+        <IconButton><AccountCircleIcon /></IconButton>
+        <IconButton><CloudIcon /></IconButton>
+        <IconButton><SyncIcon /></IconButton>
+        <IconButton><LockIcon /></IconButton>
+        <Avatar sx={{ position: 'absolute', bottom: 16 }} src="https://i.pravatar.cc/40" />
+      </Box>
+       */}
       {/* Main Content */}
       <Box flex={1} padding={2}>
-        {/* Header Section */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} sx={{paddingBottom: '5px', borderBottom: '2px solid #ddd'}}>
-          <Typography variant="h6">All models</Typography>
+       
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} sx={{paddingBottom: '5px', borderBottom: '2px solid #ddd', margin: '0px'}}>
+          <Typography variant="h6">All Queries</Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -136,7 +126,7 @@ function App() {
             onClick={handleAddModelClick}
             sx={{ bgcolor: '#007bff'}}  // Blue color for the button
           >
-            Add model
+            Add Query
           </Button>
           <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}
               PaperProps={{
@@ -150,7 +140,7 @@ function App() {
               }}
             >
             <MenuItem onClick={handleClose}>
-              <ListItemIcon><TipsAndUpdatesIcon fontSize="small" /></ListItemIcon>
+              <ListItemIcon><img src={magicwand} alt="Magic Wand" style={{ width: '20px', height: '20px' }} /></ListItemIcon>
               <ListItemText onClick={() => handleOptionSelect(2)}>Ask AI</ListItemText>
             </MenuItem>
             <MenuItem onClick={handleClose}>
@@ -161,26 +151,27 @@ function App() {
         </Box>
  
         {/* Filters and Search */}
-        <Box display="flex" gap={2} mb={2} sx={{paddingBottom: '5px', borderBottom: '2px solid #ddd'}}>
-          <Button variant="outlined"  onClick={handleLastUpdateClick} disabled={isFiltered}>Last update</Button>
-          <Button variant="outlined" onClick={handleClearFilter} disabled={!isFiltered}>Clear Filter</Button>
-          <Button variant="outlined">+ Add filter</Button>
-          <Box flex={1} display="flex" alignItems="center" border="1px solid #ccc" borderRadius="4px" paddingX={1} maxWidth={400}>
-            <SearchIcon color="action" />
-            <TextField placeholder="Search..." variant="standard" fullWidth InputProps={{ disableUnderline: true }} value={searchTerm} onChange={handleSearchChange} />
-          </Box>
+        <Box display="flex" gap={2} mb={2} sx={{paddingBottom: '5px', borderBottom: '2px solid #ddd', justifyContent: 'space-between', margin: '0px', padding: '10px 0px'}}>
+            <div style={{display:'flex', gap:'10px'}}>
+              <Button variant="outlined"  onClick={handleLastUpdateClick} disabled={isFiltered}>Last update</Button>
+              <Button variant="outlined" onClick={handleClearFilter} disabled={!isFiltered}>Clear Filter</Button>
+            </div>
+            <Box flex={1} display="flex"  alignItems="center" border="1px solid #ccc" borderRadius="4px" paddingX={1} maxWidth={400}>
+              <SearchIcon color="action" />
+              <TextField placeholder="Search..." variant="standard" fullWidth InputProps={{ disableUnderline: true }} value={searchTerm} onChange={handleSearchChange} />
+            </Box>
         </Box>
  
         {/* Data Table */}
-        <Box height="calc(100vh - 190px)" bgcolor="white" borderRadius="8px" boxShadow={1}>
+        <Box height="calc(100vh - 190px)" bgcolor="white" borderRadius="8px" boxShadow={1} sx={{marginTop: '10px'}}>
           <DataGrid
             rows={filteredRows}
             columns={[
               { field: 'name', headerName: 'Name', width: 300 },
-              { field: 'createdBy', headerName: 'Created By', width: 150 },
-              { field: 'createdOn', headerName: 'Created On', width: 200 },
-              { field: 'modifiedBy', headerName: 'Modified By', width: 150 },
-              { field: 'modifiedOn', headerName: 'Modified On', width: 200 },
+              { field: 'createdBy', headerName: 'Created By', width: 200 },
+              { field: 'createdOn', headerName: 'Created On', width: 250 },
+              { field: 'modifiedBy', headerName: 'Modified By', width: 200 },
+              { field: 'modifiedOn', headerName: 'Modified On', width: 250 },
             ]}
             pageSize={5}
             disableSelectionOnClick

@@ -54,3 +54,9 @@
   margin-right: 15px;
 }
 
+.MuiTablePagination-selectLabel {
+  margin: 0px;
+}
+.MuiTablePagination-displayedRows{
+  margin: 0px
+}
