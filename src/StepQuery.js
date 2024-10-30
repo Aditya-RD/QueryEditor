@@ -261,7 +261,7 @@ const TreeNode = ({ node, level = 0, parentPath = '', onDragStart, selectedSourc
         <IconButton size="small">
           {open ? <ExpandMoreIcon /> : <ChevronRightIcon />}
         </IconButton>
-        <ListItemIcon>
+        <ListItemIcon sx={{minWidth: '36px'}}>
           {node.type === 'catalog' ? <StorageIcon /> : 
            node.type === 'schema' ? <FolderIcon /> : 
            node.type === 'table' ? <TableChartIcon /> : 
@@ -509,7 +509,7 @@ const StepQuery = ({ selectedSource }) => {
       <FlexiSplit element1Id="panel1" element2Id="panel2" options={splitOptions}>
         <div style={{height: '100%',overflowY:'hidden'}}>
         <FlexiSplit element1Id="paneli1" element2Id="paneli2" options={splitOptionsi}>
-          <div>
+          <div style={{height: '100%'}}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
               <Tabs value={activeTabIndex} onChange={(e, newTab) => setActiveTabIndex(newTab)} sx={{ flexGrow: 1 }}>
                 {tabs.map((tab, index) => (
@@ -544,7 +544,7 @@ const StepQuery = ({ selectedSource }) => {
             {tabs.map((tab, index) => (
               <div
                 key={tab.id}
-                style={{ display: activeTabIndex === index ? 'block' : 'none', height: '100%' }}
+                style={{ display: activeTabIndex === index ? 'block' : 'none', height: 'calc(100% - 55px)', overflowY: 'auto' }}
               >
                 <SQLEditor
                   value={tab.content}

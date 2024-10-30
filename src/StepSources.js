@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CircularProgress from '@mui/material/CircularProgress'; // Import CircularProgress
 import './StepSources.css';
 
-// Import images directly
 import MSSQLIcon from './assets/images/MSSQL.png';
 import ORACLEIcon from './assets/images/ORACLE.png';
 import SNOWFLAKEIcon from './assets/images/SNOWFLAKE.svg';
@@ -13,7 +13,6 @@ import HIVEIcon from './assets/images/HIVE.png';
 import HANAIcon from './assets/images/HANA.png';
 import DATABRICKSIcon from './assets/images/DATABRICKS.png';
 
-// Map dataSourceId to imported images
 const imageMap = {
   1: MSSQLIcon,
   5: ORACLEIcon,
@@ -23,13 +22,14 @@ const imageMap = {
   6: MYSQLIcon,
   38: HIVEIcon,
   7: HANAIcon,
-  34: DATABRICKSIcon // or use DELTALAKEIcon if needed for another category
+  34: DATABRICKSIcon 
 };
 
 const StepSources = ({ selectedSource, setSelectedSource, onNext }) => {
   const [sources, setSources] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate(); // Initialize navigate function
+  const [loading, setLoading] = useState(true); // New loading state
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSources = async () => {
@@ -49,6 +49,8 @@ const StepSources = ({ selectedSource, setSelectedSource, onNext }) => {
         setSources(rdbmsSources);
       } catch (error) {
         console.error('Failed to fetch sources:', error);
+      } finally {
+        setLoading(false); // Set loading to false after fetching
       }
     };
     fetchSources();
@@ -70,32 +72,41 @@ const StepSources = ({ selectedSource, setSelectedSource, onNext }) => {
           placeholder="Search..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          disabled={loading} // Disable search input while loading
         />
       </div>
-      <div className="source-list">
-        {filteredSources.map((source) => (
-          <div key={source.id} className="form-check source-item">
-            <input
-              className="form-check-input"
-              type="radio"
-              name="source"
-              id={`source-${source.id}`}
-              value={source.id}
-              checked={selectedSource.id === source.id}
-              onChange={() => setSelectedSource(source)}
-            />
-            <label className="form-check-label d-flex align-items-center" htmlFor={`source-${source.id}`}>
-              <img
-                height={16}
-                src={imageMap[source.dataSourceId] || 'assets/images/default.png'}
-                alt={`${source.name} icon`}
-                className="source-icon me-2"
+      
+      {loading ? (
+        <div className="loader-container">
+          <CircularProgress /> {/* Circular progress loader */}
+        </div>
+      ) : (
+        <div className="source-list">
+          {filteredSources.map((source) => (
+            <div key={source.id} className="form-check source-item">
+              <input
+                className="form-check-input"
+                type="radio"
+                name="source"
+                id={`source-${source.id}`}
+                value={source.id}
+                checked={selectedSource.id === source.id}
+                onChange={() => setSelectedSource(source)}
               />
-              {source.name}
-            </label>
-          </div>
-        ))}
-      </div>
+              <label className="form-check-label d-flex align-items-center" htmlFor={`source-${source.id}`}>
+                <img
+                  height={16}
+                  src={imageMap[source.dataSourceId] || 'assets/images/default.png'}
+                  alt={`${source.name} icon`}
+                  className="source-icon me-2"
+                />
+                {source.name}
+              </label>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="footer mt-3">
         <button className="btn btn-secondary me-2" onClick={() => navigate('/')}>Go Back</button>
         <button className="btn btn-primary" onClick={onNext} disabled={!selectedSource.id}>
