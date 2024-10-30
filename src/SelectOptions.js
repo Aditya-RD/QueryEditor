@@ -28,15 +28,10 @@
 // export default SelectOption;
  
 import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, IconButton, Avatar, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Typography, Button, TextField, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
-import SyncIcon from '@mui/icons-material/Sync';
-import CloudIcon from '@mui/icons-material/Cloud';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import HomeIcon from '@mui/icons-material/Home';
-import LockIcon from '@mui/icons-material/Lock';
 import CodeIcon from '@mui/icons-material/Code';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import dayjs from 'dayjs';
@@ -128,17 +123,7 @@ function App() {
   };
  
   return (
-    <Box display="flex" height="100vh" bgcolor="#f9fafb">
-      {/* Sidebar */}
-      <Box width="80px" bgcolor="#f5f5f5" display="flex" flexDirection="column" alignItems="center" paddingY={2} sx={{borderRight: '2px solid #ddd'}}>
-        <IconButton><HomeIcon /></IconButton>
-        <IconButton><AccountCircleIcon /></IconButton>
-        <IconButton><CloudIcon /></IconButton>
-        <IconButton><SyncIcon /></IconButton>
-        <IconButton><LockIcon /></IconButton>
-        <Avatar sx={{ position: 'absolute', bottom: 16 }} src="https://i.pravatar.cc/40" />
-      </Box>
-     
+    <Box display="flex" height="100%" bgcolor="#f9fafb">
       {/* Main Content */}
       <Box flex={1} padding={2}>
         {/* Header Section */}
@@ -187,7 +172,7 @@ function App() {
         </Box>
  
         {/* Data Table */}
-        <Box height="calc(100vh - 200px)" bgcolor="white" borderRadius="8px" boxShadow={1}>
+        <Box height="calc(100vh - 190px)" bgcolor="white" borderRadius="8px" boxShadow={1}>
           <DataGrid
             rows={filteredRows}
             columns={[

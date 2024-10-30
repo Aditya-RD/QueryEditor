@@ -1,11 +1,18 @@
-import React, {useState} from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, Link } from 'react-router-dom';
+import { AppBar, Toolbar, Drawer, List, ListItem, ListItemIcon } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import SelectOption from './SelectOptions';
 import Stepper from './Stepper';
 import StepSources from './StepSources';
 import StepQuery from './StepQuery';
 import StepDetails from './StepDetails';
 import StepPrompt from './StepPrompt';
+import './App.css';
+import Logo from './assets/images/logo.svg';
+
+const drawerWidth = 50;
 
 const App = () => {
   const stepsCustomQuery = ['Sources', 'Query', 'Details'];
@@ -13,26 +20,70 @@ const App = () => {
 
   return (
     <Router>
-      <div className="container-fluid">
-        <Routes>
-          <Route path="/" element={<SelectOption />} />
-          <Route
-            path="/custom-query/*"
-            element={<MultiStepForm steps={stepsCustomQuery} optionType="custom-query" />}
-          />
-          <Route
-            path="/gen-ai/*"
-            element={<MultiStepForm steps={stepsGenAI} optionType="gen-ai" />}
-          />
-          <Route path="*" element={<Navigate to="/" />} /> {/* Redirect to home if path doesn't match */}
-        </Routes>
+      <div style={{ display: 'flex' }}>
+        <Header />
+        <Sidebar />
+        <main className="content">
+          <Routes>
+            <Route path="/" element={<SelectOption />} />
+            <Route
+              path="/custom-query/*"
+              element={<MultiStepForm steps={stepsCustomQuery} optionType="custom-query" />}
+            />
+            <Route
+              path="/gen-ai/*"
+              element={<MultiStepForm steps={stepsGenAI} optionType="gen-ai" />}
+            />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );
 };
 
+const Header = () => (
+  <AppBar position="fixed" sx={{ zIndex: 1201, height: '40px' }}>
+    <Toolbar sx={{ minHeight: '40px !important' }}>
+      <img src={Logo} alt="Logo" style={{ height: '24px', marginRight: '15px' }} />
+    </Toolbar>
+  </AppBar>
+);
+
+const Sidebar = () => (
+  <Drawer
+    variant="permanent"
+    sx={{
+      width: drawerWidth,
+      flexShrink: 0,
+      [`& .MuiDrawer-paper`]: {
+        width: drawerWidth,
+        boxSizing: 'border-box',
+        backgroundColor: '#f5f5f5',
+        color: '#0000008a',
+        display: 'flex',
+        alignItems: 'center',
+      },
+    }}
+  >
+    {/* <Toolbar /> */}
+    <List sx={{ width: '100%', marginTop: '40px' }}>
+      <ListItem button component={Link} to="/" sx={{ justifyContent: 'center' }}>
+        <ListItemIcon sx={{ justifyContent: 'center', color: '#0000008a', minWidth:'50px' }}>
+          <HomeIcon />
+        </ListItemIcon>
+      </ListItem>
+      <ListItem button component={Link} to="/custom-query" sx={{ justifyContent: 'center' }}>
+        <ListItemIcon sx={{ justifyContent: 'center', color: '#0000008a', minWidth:'50px' }}>
+          <QueryStatsIcon />
+        </ListItemIcon>
+      </ListItem>
+    </List>
+  </Drawer>
+);
+
 const MultiStepForm = ({ steps, optionType }) => {
-  const [selectedSource, setSelectedSource] = useState({}); // State for selected source
+  const [selectedSource, setSelectedSource] = useState({});
   const navigate = useNavigate();
   const { '*': stepParam } = useParams();
   const currentStepIndex = steps.findIndex(step => step.toLowerCase() === (stepParam || steps[0]).toLowerCase());

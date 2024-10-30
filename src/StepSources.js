@@ -34,12 +34,13 @@ const StepSources = ({ selectedSource, setSelectedSource, onNext }) => {
   useEffect(() => {
     const fetchSources = async () => {
       try {
+        const bearerToken = process.env.REACT_APP_BEARER_TOKEN;
         const response = await fetch(
           'https://dx-qast.getrightdata.com/dweb/connections/jdbc/all',
           {
             method: 'GET',
             headers: {
-              Authorization: `Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJSQkZRb3QzQndkeW03dFJfWlk4U3RtR1RYUHRrV3N6Sk05Y1djamJOV3AwIn0.eyJleHAiOjE3MzAyMTQwMjMsImlhdCI6MTczMDEyNzYyMywiYXV0aF90aW1lIjoxNzMwMTI3NjIxLCJqdGkiOiIyMjE5MTE5Zi0wMDE2LTRjMTUtYmUxMC0wNzc4MDJmNDI2MjQiLCJpc3MiOiJodHRwczovL2R4LXFhc3QuZ2V0cmlnaHRkYXRhLmNvbTo5NDQzL3JlYWxtcy9kZXh0cnVzIiwiYXVkIjoiZGF0YS1tYXJrZXQiLCJzdWIiOiI1NDUwMDg3Ny1jMDc5LTQwYjctOWRhNC1mNGM0ODFjNDk4MmQiLCJ0eXAiOiJJRCIsImF6cCI6ImRhdGEtbWFya2V0Iiwibm9uY2UiOiI4ZDY0N2FiMi1mYjQyLTQ5ZmYtYjhlMy0wMjIxZWJmNTdkOGEiLCJzZXNzaW9uX3N0YXRlIjoiODgwZjJkNGMtM2NjMy00NTdiLWExMmUtY2EyMTc0ZTE5ZDUwIiwiYXRfaGFzaCI6IkVsQ2sxSWlzUlRkSi02cFZ5cUt1Z3ciLCJhY3IiOiIxIiwic2lkIjoiODgwZjJkNGMtM2NjMy00NTdiLWExMmUtY2EyMTc0ZTE5ZDUwIiwiaXNEZlVzZXIiOnRydWUsImlzQ29uc3VtZXIiOnRydWUsInN1YiI6IkRYQURNSU46MSIsImNsaWVudElkIjoiMSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZ3NSb2xlcyI6WyJncy5keGFkbWluLXJvbGUiXSwiaXNTdXBlckFkbWluIjp0cnVlLCJvbmx5RGF0YU1hcmtldEFsbG93ZWQiOnRydWUsInByZWZlcnJlZF91c2VybmFtZSI6ImR4YWRtaW5AZ2V0cmlnaHRkYXRhLmNvbSIsImdpdmVuX25hbWUiOiJEYXZpZCIsInVzZXJOYW1lIjoiRGF2aWQiLCJ1c2VySWQiOiIxIiwidXVpZCI6IjU0NTAwODc3LWMwNzktNDBiNy05ZGE0LWY0YzQ4MWM0OTgyZCIsIm5hbWUiOiJEYXZpZCBhZG1pbiIsInVzZXJFbWFpbCI6ImR4YWRtaW5AZ2V0cmlnaHRkYXRhLmNvbSIsImJ1c2luZXNzT3duZXIiOnRydWUsImZhbWlseV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImR4YWRtaW5AZ2V0cmlnaHRkYXRhLmNvbSJ9.TopTeVYJZUwbi-uMwL6JPAp-hwivY6rKmTzOA5DObdWmihQZwhgshQQU_-Qv-788G5TXpMJ0WCBku3UUq85Lszsuo-9YufQEH44FYZaIsRga-wZHHLseixRL-mOkM14q-RrWW7rKvk3Y5oxHUskLvczRRvG411W7cOhLFTJfUS3xjjm42wgWz2kaGVU70HJNw0NKEbrZwdzmQFnuWQJdz02de5q6UAT4ZxNyXklc9Zvz1hQ87UWozpwkwc3FrFirSA_SgPGDHqHTnXksyPgbsht-oLioL9oG7lxOsP8PRCk0jUwiRH0XEhWTlvyZfSPg58POfE7jB9fFIGlPMSj4pg`
+              Authorization: `Bearer ${bearerToken}`
             }
           }
         );
