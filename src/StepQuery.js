@@ -4,12 +4,15 @@ import {
   ListItem,
   ListItemText,
   Collapse,
+  Typography,
   IconButton,
   CircularProgress,
   Tabs,
   Tab,
   Box,
   ListItemIcon,
+  Modal,
+  Button
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -30,6 +33,8 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import './App.css';
+import AiQueryPopup from './StepPrompt';
+import magicwandIcon from './magic-wand.png'
 
 const splitOptions = {
   percentage1: 70,
@@ -393,6 +398,20 @@ const StepQuery = ({ selectedSource }) => {
   const [databaseTreeData, setDatabaseTreeData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [gridData, setGridData] = useState(null); // New state for grid data
+  
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
+
+  const handleInsertText = (text) => {
+    setTabs((prevTabs) =>
+      prevTabs.map((tab, i) =>
+        i === activeTabIndex ? { ...tab, content: tab.content + text } : tab
+      )
+    );
+    handleCloseModal();
+  };
 
   useEffect(() => {
     if (selectedSource?.name) {
@@ -544,7 +563,7 @@ const StepQuery = ({ selectedSource }) => {
             {tabs.map((tab, index) => (
               <div
                 key={tab.id}
-                style={{ display: activeTabIndex === index ? 'block' : 'none', height: 'calc(100% - 55px)', overflowY: 'auto' }}
+                style={{ display: activeTabIndex === index ? 'block' : 'none', height: 'calc(100% - 55px)', overflowY: 'auto', position: 'relative' }}
               >
                 <SQLEditor
                   value={tab.content}
@@ -566,6 +585,7 @@ const StepQuery = ({ selectedSource }) => {
                   }}
                   onDragOver={(event) => event.preventDefault()}
                 />
+                <Button variant="outlined" onClick={handleOpenModal} sx={{position:'absolute', bottom:'10px', right: '10px'}}><img alt={'prompt'} src={magicwandIcon} height={24}></img></Button>
               </div>
             ))}
           </div>
@@ -598,6 +618,34 @@ const StepQuery = ({ selectedSource }) => {
           )}
         </div>
       </FlexiSplit>
+
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '20px',
+            width: '540px',
+            margin: '100px auto',
+            backgroundColor: 'white',
+            borderRadius: 2,
+            boxShadow: 24,
+            position: 'relative',
+          }}
+        >
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+          >
+            <Typography variant="h6" component="h2">
+              Prompt
+            </Typography>
+            <IconButton onClick={handleCloseModal}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <AiQueryPopup onInsertText={handleInsertText} />
+        </Box>
+      </Modal>
     </div>
   );
 };
