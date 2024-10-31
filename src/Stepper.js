@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button'; // Import MUI Button
 import CheckIcon from '@mui/icons-material/Check'; // Import MUI Check Icon
 import './Stepper.css';
 import QueryStats from './assets/images/flowChart.png';
 
 const Stepper = ({ steps, currentStep }) => {
+  const navigate = useNavigate();
   return (
     <div className="stepper-wrapper">
       <span className="stepper-title"><img src={QueryStats} alt="QueryStats" style={{ height: '24px', marginRight: '10px', marginTop: '-7px' }} /> Create Query</span>
@@ -25,7 +27,7 @@ const Stepper = ({ steps, currentStep }) => {
           </React.Fragment>
         ))}
       </div>
-      <Button variant="outlined" color="secondary" className="cancel-button">
+      <Button variant="outlined" color="secondary" className="cancel-button" onClick={() => navigate('/')}>
         Cancel
       </Button>
     </div>

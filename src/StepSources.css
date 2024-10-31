@@ -4,7 +4,7 @@
     padding: 20px;
     background-color: #f8f9fa;
     width: 500px;
-    margin: auto;
+    margin: 20px auto;
   }
   
   .header {
@@ -17,7 +17,7 @@
   }
   
   .source-list {
-    max-height: 300px;
+    max-height: calc(100% - 85px);
     overflow-y: auto;
   }
   
@@ -25,7 +25,7 @@
     display: flex;
     align-items: center;
     padding: 10px;
-    padding-left: 30px;
+    padding-left: 30px !important;
     border-bottom: 1px solid #eee;
   }
   
