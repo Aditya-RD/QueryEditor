@@ -315,7 +315,7 @@ const DatabaseTree = ({ selectedSourceName, onDragStart }) => {
   };
 
   return (
-    <div>
+    <div style={{height: 'calc(100% - 55px)', overflowY: 'auto'}}>
       {loading ? (
         <CircularProgress />
       ) : (

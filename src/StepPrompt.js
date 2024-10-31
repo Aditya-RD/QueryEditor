@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, IconButton, InputAdornment, Typography } from '@mui/material';
 import { Send } from '@mui/icons-material';
+import magicwand from './magic-wand.png';
 
 function AiQueryPopup({ onInsertText }) {
   const [inputText, setInputText] = useState('');
@@ -24,7 +25,7 @@ function AiQueryPopup({ onInsertText }) {
         display: 'flex',
         flexDirection: 'column',
         padding: '10px',
-        borderRadius: '12px',
+        borderRadius: '0 0 12px 12px',
         backgroundColor: '#f5f5f5',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
         width: '500px',
@@ -42,7 +43,7 @@ function AiQueryPopup({ onInsertText }) {
         InputProps={{
           startAdornment: (
             <InputAdornment position="start" style={{ marginTop: '-66px' }}>
-              <Typography variant="body2">✏️</Typography>
+              <Typography variant="body2"><img src={magicwand} alt="Magic Wand" style={{ width: '20px', height: '20px', marginTop: '-5px' }} /></Typography>
             </InputAdornment>
           ),
           style: { fontSize: '16px', background: '#fff' },

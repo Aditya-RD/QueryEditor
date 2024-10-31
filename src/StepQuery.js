@@ -6,13 +6,10 @@ import {
   Box,
   IconButton,
   Button,
-  Modal,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import MenuIcon from '@mui/icons-material/Menu';
-import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
 import DatabaseTree from './DatabaseTree'; import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import FlexiSplit from './FlexiSplit';
@@ -25,30 +22,36 @@ import magicwandIcon from './magic-wand.png';
 import PlayArrowIcon from './assets/images/run-query.svg';
 import FileDownloadIcon from './assets/images/download_color.svg';
 import ClearIcon from './assets/images/close.svg';
+import ContentCopyIcon from './assets/images/copy-icon.svg';
+import FormatAlignLeftIcon from './assets/images/beautify-icon.svg';
+import RefreshIcon from './assets/images/refresh.svg';
+import SearchIcon from './assets/images/search.svg';
+import MenuIcon from './assets/images/right-arrow-navigator.svg';
+import LeftArrow from './assets/images/left-arrow-navigator.svg';
 
 // Add the executeQuery function here
 
-const splitOptions = {
-  percentage1: 70,
-  percentage2: 30,
-  minSize1: 100,
-  minSize2: 100,
-  gutterSize: 2,
-  direction: 'horizontal',
-  collapseButtonVisible: true,
-  initiallyCollapsed: true,
-};
+// const splitOptions = {
+//   percentage1: 70,
+//   percentage2: 30,
+//   minSize1: 100,
+//   minSize2: 100,
+//   gutterSize: 2,
+//   direction: 'horizontal',
+//   collapseButtonVisible: true,
+//   initiallyCollapsed: true,
+// };
 
-const splitOptionsi = {
-  percentage1: 70,
-  percentage2: 30,
-  minSize1: 100,
-  minSize2: 100,
-  gutterSize: 2,
-  direction: 'vertical',
-  collapseButtonVisible: true,
-  initiallyCollapsed: true,
-};
+// const splitOptionsi = {
+//   percentage1: 70,
+//   percentage2: 30,
+//   minSize1: 100,
+//   minSize2: 100,
+//   gutterSize: 2,
+//   direction: 'vertical',
+//   collapseButtonVisible: true,
+//   initiallyCollapsed: true,
+// };
 
 const SQLEditor = ({ value, onChange, onDrop, onDragOver }) => {
   return (
@@ -126,14 +129,27 @@ const executeQuery = async (queryText) => {
 
 // StepQuery component begins here
 const StepQuery = ({ selectedSource }) => {
-  const [tabs, setTabs] = useState([{ id: 0, title: 'Query 1', content: '' }]);
+  const isGenAI = window.location.href.includes("gen-ai");
+  const [tabs, setTabs] = useState([{ id: 0, title: 'Query 1', content: '', promptOpen: isGenAI }]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [nextTabId, setNextTabId] = useState(1);
   const [gridData, setGridData] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
+  //const [openModal, setOpenModal] = useState(false);
+  const [resultsLoading, setResultsLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false); // Add loading state
 
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
+  // const handleOpenModal = () => setOpenModal(true);
+  // const handleCloseModal = () => setOpenModal(false);
+  
+  const handleTogglePrompt = () => {
+    setTabs((prevTabs) =>
+      prevTabs.map((tab, index) =>
+        index === activeTabIndex ? { ...tab, promptOpen: !tab.promptOpen } : tab
+      )
+    );
+  };
+
+
   const [mainSplitterConfig, setMainSplitterConfig] = useState({
     percentage1: 70,
     percentage2: 30,
@@ -141,6 +157,16 @@ const StepQuery = ({ selectedSource }) => {
     minSize2: 100,
     gutterSize: 2,
     direction: 'horizontal',
+    collapseButtonVisible: true,
+    initiallyCollapsed: true,
+  });
+  const [subSplitterConfig, setSubSplitterConfig] = useState({
+    percentage1: 70,
+    percentage2: 30,
+    minSize1: 100,
+    minSize2: 100,
+    gutterSize: 2,
+    direction: 'vertical',
     collapseButtonVisible: true,
     initiallyCollapsed: true,
   });
@@ -152,17 +178,44 @@ const StepQuery = ({ selectedSource }) => {
     })); // Toggle the collapse state
   };
 
-  const handleInsertText = (text) => {
-    setTabs((prevTabs) =>
-      prevTabs.map((tab, i) =>
-        i === activeTabIndex ? { ...tab, content: tab.content + text } : tab
-      )
-    );
-    handleCloseModal();
+  const handleOpenResults = () => {
+    setSubSplitterConfig(prevState => ({
+      ...prevState,
+      initiallyCollapsed: false
+    })); // Toggle the collapse state
+  };
+
+  const handleInsertText = async (text) => {
+    setLoading(true); // Start loading
+    try {
+      const response = await fetch('http://127.0.0.1:5000/get_data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const outputText = result.output;
+      setTabs((prevTabs) =>
+        prevTabs.map((tab, i) =>
+          i === activeTabIndex ? { ...tab, content: tab.content + outputText } : tab
+        )
+      );
+    } catch (error) {
+      console.error('Error submitting prompt:', error);
+    } finally {
+      setLoading(false); // Stop loading
+      handleTogglePrompt();
+    }
   };
 
   const handleAddTab = () => {
-    const newTab = { id: nextTabId, title: `Query ${nextTabId + 1}`, content: '' };
+    const isGenAI = window.location.href.includes("gen-ai");
+    const newTab = { id: nextTabId, title: `Query ${nextTabId + 1}`, content: '', promptOpen: isGenAI };
     setTabs((prevTabs) => [...prevTabs, newTab]);
     setActiveTabIndex(tabs.length);
     setNextTabId(nextTabId + 1);
@@ -215,25 +268,52 @@ const StepQuery = ({ selectedSource }) => {
 
   const handleRunQuery = async () => {
     const activeQuery = tabs[activeTabIndex].content;
+    setGridData(null);
+    setResultsLoading(true);
     const data = await executeQuery(activeQuery);
+
+    setResultsLoading(false);
     if (data) {
+      handleOpenResults();
       setGridData(data);
+    } else {
+      alert('error');
     }
+    setResultsLoading(false);
   };
 
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%' }}>
       <FlexiSplit element1Id="panel1" element2Id="panel2" options={mainSplitterConfig}>
-        <div style={{ height: '100%', overflowY: 'hidden' }}>
-          <FlexiSplit element1Id="paneli1" element2Id="paneli2" options={splitOptionsi}>
-            <div style={{ height: '100%' }}>
+        <div style={{ height: '100%', overflowY: 'hidden', padding: '10px' }}>
+          <FlexiSplit element1Id="paneli1" element2Id="paneli2" options={subSplitterConfig}>
+            <div style={{ height: '100%', border: '1px solid #b0b1b2' }}>
               <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
                 <Tabs value={activeTabIndex} onChange={(e, newTab) => setActiveTabIndex(newTab)} sx={{ flexGrow: 1 }}>
                   {tabs.map((tab, index) => (
                     <Tab
                       key={tab.id}
                       label={
-                        <Box display="flex" alignItems="center">
+                        // <Box display="flex" alignItems="center">
+                        //   {tab.title}
+                        //   <IconButton
+                        //     size="small"
+                        //     onClick={(e) => {
+                        //       e.stopPropagation();
+                        //       handleDeleteTab(tab.id);
+                        //     }}
+                        //   >
+                        //     <CloseIcon fontSize="small" />
+                        //   </IconButton>
+                        // </Box>
+                        <Box display="flex" alignItems="center" sx={{
+                          '& .close-icon': {
+                            visibility: 'hidden',
+                          },
+                          '&:hover .close-icon': {
+                            visibility: 'visible',
+                          },
+                        }}>
                           {tab.title}
                           <IconButton
                             size="small"
@@ -241,7 +321,7 @@ const StepQuery = ({ selectedSource }) => {
                               e.stopPropagation();
                               handleDeleteTab(tab.id);
                             }}
-                          >
+                            className="close-icon">
                             <CloseIcon fontSize="small" />
                           </IconButton>
                         </Box>
@@ -251,13 +331,21 @@ const StepQuery = ({ selectedSource }) => {
                   <Tab label="+" onClick={handleAddTab} />
                 </Tabs>
 
-                <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
+                {/* <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
                   <IconButton onClick={handlePrettyPrintQuery}><FormatAlignLeftIcon /></IconButton>
                   <IconButton onClick={handleCopyQuery}><ContentCopyIcon /></IconButton>
                   <IconButton onClick={handleClearEditor}><img src={ClearIcon} alt="ClearIcon" title="Clear" style={{ height: '14px' }} /></IconButton>
                   <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '20px' }} /></IconButton>
                   <IconButton onClick={handleRunQuery}><img src={PlayArrowIcon} alt="PlayArrowIcon" title="Run Query" style={{ height: '20px' }} /></IconButton>
                   <IconButton onClick={handleToggleNavigator}><MenuIcon /></IconButton>
+                </Box> */}
+                <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
+                  <IconButton onClick={handlePrettyPrintQuery}><img src={FormatAlignLeftIcon} alt="FormatAlignLeftIcon" title="Pretty Print" style={{ height: '20px' }} /></IconButton>
+                  <IconButton onClick={handleCopyQuery}><img src={ContentCopyIcon} alt="ContentCopyIcon" title="Copy" style={{ height: '20px' }} /></IconButton>
+                  <IconButton onClick={handleClearEditor}><img src={ClearIcon} alt="ClearIcon" title="Clear" style={{ height: '14px' }} /></IconButton>
+                  <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '20px' }} /></IconButton>
+                  <IconButton onClick={handleRunQuery}><img src={PlayArrowIcon} alt="PlayArrowIcon" title="Run Query" style={{ height: '20px' }} /></IconButton>
+                  <IconButton onClick={handleToggleNavigator}><img src={MenuIcon} alt="MenuIcon" title="Navigator" style={{ height: '16px' }} /></IconButton>
                 </Box>
               </Box>
               {tabs.map((tab, index) => (
@@ -285,33 +373,75 @@ const StepQuery = ({ selectedSource }) => {
                     }}
                     onDragOver={(event) => event.preventDefault()}
                   />
-                  <Button variant="outlined" onClick={handleOpenModal} sx={{ position: 'absolute', bottom: '20%', right: '10px', height: '60px', width: '60px', borderRadius: '30px' }}><img alt={'prompt'} src={magicwandIcon} height={24}></img></Button>
+                  <Button variant="outlined" onClick={handleTogglePrompt} sx={{ position: 'absolute', bottom: '20%', right: '10px', height: '60px', width: '60px', borderRadius: '30px' }}><img alt={'prompt'} src={magicwandIcon} height={24}></img></Button>
+                  {/* Prompt Overlay */}
+                  {tab.promptOpen && (
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                      backgroundColor: 'rgba(0, 0, 0, 0.3)', zIndex: 10, padding: '20px',
+                      display: 'flex', flexDirection: 'column', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                      alignItems: 'center'
+                    }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" width={'500px'} backgroundColor={'#f5f5f5'} borderRadius={'12px 12px 0 0'}>
+                        <Typography variant="h6" paddingLeft={'10px'}>Prompt</Typography>
+                        <IconButton onClick={handleTogglePrompt}><CloseIcon /></IconButton>
+                      </Box>
+                      {loading ? (
+                        <Box display="flex" justifyContent="center" alignItems="center" height="200px" width={'500px'} backgroundColor={'#f5f5f5'} borderRadius={'0 0 12px 12px'}>
+                          <CircularProgress />
+                        </Box>
+                      ) : (
+                        <AiQueryPopup onInsertText={handleInsertText} />
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
-              {gridData ? (
-                <AgGridReact
-                  columnDefs={gridData.columns.map(col => ({
-                    headerName: col.columnName,
-                    field: col.columnName,
-                    type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn'
-                  }))}
-                  rowData={gridData.rows}
-                />
+              {resultsLoading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" height={'200px'}>
+                  <CircularProgress />
+                </Box>
               ) : (
-                <div className="previewGrid">Run a query to see results here</div>
+                gridData ? (
+                  <AgGridReact
+                    columnDefs={gridData.columns.map(col => ({
+                      headerName: col.columnName,
+                      field: col.columnName,
+                      type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn'
+                    }))}
+                    rowData={gridData.rows}
+                  />
+                ) : (
+                  <div className="previewGrid">Run a query to see results here</div>
+                )
               )}
             </div>
           </FlexiSplit>
         </div>
-        <div>
-          <h5 className='m-3'>Selected Source: {selectedSource.name}</h5>
+        <div style={{ height: '100%' }}>
+        {/* <div>
+          <h5 className='m-2'>Navigator</h5>
+          <div style={{float: 'right', marginTop: '-27px'}}>
+          <img src={RefreshIcon} alt="RefreshIcon" title='Refresh' style={{ height: '22px', marginRight: '10px', marginTop: '-7px' }} />
+          <img src={SearchIcon} alt="SearchIcon" title='Search' style={{ height: '18px', marginRight: '10px', marginTop: '-7px' }} />
+          <img src={LeftArrow} alt="LeftArrow" title='collapse' style={{ height: '18px', marginRight: '10px', marginTop: '-7px' }} />
+          </div>
+        </div> */}
+          <h5 className='p-3 m-0' style={{ height: '55px', borderBottom: '1px solid #ccc' }}>
+            Source: {selectedSource.name}
+            <div style={{float:'right',display:'flex',alignItems:'center',gap:'15px',height:'25px'}}>
+              <img src={RefreshIcon} alt="RefreshIcon" title='Refresh' style={{ height: '22px' }} />
+              <img src={SearchIcon} alt="SearchIcon" title='Search' style={{ height: '18px' }} />
+              <img src={LeftArrow} alt="LeftArrow" title='collapse' style={{ height: '18px' }} />
+            </div>
+          </h5>
           <DatabaseTree selectedSourceName={selectedSource.name} onDragStart={(e, tablePath) => e.dataTransfer.setData('text/plain', tablePath)} />
         </div>
       </FlexiSplit>
 
-      <Modal open={openModal} onClose={handleCloseModal}>
+      {/* <Modal open={openModal} onClose={handleCloseModal}>
         <Box
           sx={{
             display: 'flex',
@@ -325,9 +455,7 @@ const StepQuery = ({ selectedSource }) => {
             position: 'relative',
           }}
         >
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6" component="h2">
               Prompt
             </Typography>
@@ -335,9 +463,16 @@ const StepQuery = ({ selectedSource }) => {
               <CloseIcon />
             </IconButton>
           </Box>
-          <AiQueryPopup onInsertText={handleInsertText} />
+          
+          {loading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+              <CircularProgress />
+            </Box>
+          ) : (
+            <AiQueryPopup onInsertText={handleInsertText} />
+          )}
         </Box>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };

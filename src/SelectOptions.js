@@ -133,7 +133,7 @@ function App() {
                 sx: {
                   width: '240px',
                   marginTop: '8px',
-                  marginLeft: '-120px',
+                  marginLeft: '-60px',
                   zIndex: 1300,
                   borderRadius: '10px'
                 }

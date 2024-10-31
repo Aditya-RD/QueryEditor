@@ -82,11 +82,17 @@ const Sidebar = () => (
 
 const MultiStepForm = ({ steps, optionType }) => {
   const [selectedSource, setSelectedSource] = useState({});
+  const [isCompleted, setIsCompleted] = useState(false); // New state to track if the last step is completed
+
   const navigate = useNavigate();
   const { '*': stepParam } = useParams();
   const currentStepIndex = steps.findIndex(
     (step) => step.toLowerCase() === (stepParam || steps[0]).toLowerCase()
   );
+
+  const handleCompleteLastStep = () => {
+    setIsCompleted(true); // Mark the final step as completed
+  };
 
   const renderStepContent = () => {
     switch (steps[currentStepIndex]) {
@@ -95,7 +101,7 @@ const MultiStepForm = ({ steps, optionType }) => {
       case 'Query':
         return <StepQuery selectedSource={selectedSource} />;
       case 'Details':
-        return <StepDetails />;
+        return <StepDetails onComplete={handleCompleteLastStep} />; // Pass the callback to StepDetails
       default:
         return null;
     }
@@ -106,7 +112,9 @@ const MultiStepForm = ({ steps, optionType }) => {
       alert("Please select a source to continue.");
       return;
     }
-
+    if (currentStepIndex === steps.length - 1) {
+      navigate(`/`);
+    }
     if (currentStepIndex < steps.length - 1) {
       const nextStep = steps[currentStepIndex + 1].toLowerCase();
       navigate(`/${optionType}/${nextStep}`);
@@ -119,10 +127,10 @@ const MultiStepForm = ({ steps, optionType }) => {
       navigate(`/${optionType}/${previousStep}`);
     }
   };
-
+  
   return (
     <>
-      <Stepper steps={steps} currentStep={currentStepIndex} />
+      <Stepper steps={steps} currentStep={currentStepIndex} isCompleted={isCompleted} />
       <div className="step-content" style={{ height: 'calc(100% - 115px)', borderBottom: '1px solid #ccc', display:'flex' }}>
         {renderStepContent()}
       </div>
@@ -139,5 +147,66 @@ const MultiStepForm = ({ steps, optionType }) => {
     </>
   );
 };
+// const MultiStepForm = ({ steps, optionType }) => {
+//   const [selectedSource, setSelectedSource] = useState({});
+//   const navigate = useNavigate();
+//   const { '*': stepParam } = useParams();
+//   const currentStepIndex = steps.findIndex(
+//     (step) => step.toLowerCase() === (stepParam || steps[0]).toLowerCase()
+//   );
+
+//   const renderStepContent = () => {
+//     switch (steps[currentStepIndex]) {
+//       case 'Sources':
+//         return <StepSources selectedSource={selectedSource} setSelectedSource={setSelectedSource} />;
+//       case 'Query':
+//         return <StepQuery selectedSource={selectedSource} />;
+//       case 'Details':
+//         return <StepDetails />;
+//       default:
+//         return null;
+//     }
+//   };
+
+//   const handleNext = () => {
+//     if (steps[currentStepIndex] === 'Sources' && !selectedSource.id) {
+//       alert("Please select a source to continue.");
+//       return;
+//     }
+//     if (currentStepIndex === steps.length - 1) {
+//       navigate(`/`);
+//     }
+//     if (currentStepIndex < steps.length - 1) {
+//       const nextStep = steps[currentStepIndex + 1].toLowerCase();
+//       navigate(`/${optionType}/${nextStep}`);
+//     }
+//   };
+
+//   const handlePrevious = () => {
+//     if (currentStepIndex > 0) {
+//       const previousStep = steps[currentStepIndex - 1].toLowerCase();
+//       navigate(`/${optionType}/${previousStep}`);
+//     }
+//   };
+
+//   return (
+//     <>
+//       <Stepper steps={steps} currentStep={currentStepIndex} />
+//       <div className="step-content" style={{ height: 'calc(100% - 115px)', borderBottom: '1px solid #ccc', display:'flex' }}>
+//         {renderStepContent()}
+//       </div>
+//       <Box display="flex" justifyContent="right" paddingRight={'20px'} alignItems="center" height={56}>
+//         {currentStepIndex > 0 && (
+//           <Button variant="outlined" color="primary" onClick={handlePrevious} sx={{ mr: 2 }}>
+//             Previous
+//           </Button>
+//         )}
+//         <Button variant="contained" color="primary" onClick={handleNext}>
+//           {currentStepIndex < steps.length - 1 ? 'Next' : 'Finish'}
+//         </Button>
+//       </Box>
+//     </>
+//   );
+// };
 
 export default App;

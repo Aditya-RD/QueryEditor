@@ -5,6 +5,7 @@
     background-color: #f8f9fa;
     width: 500px;
     margin: 20px auto;
+    box-shadow: 0 0 10px 0 rgb(59 101 164 / 50%);
   }
   
   .header {
