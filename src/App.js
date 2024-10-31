@@ -11,6 +11,8 @@ import StepDetails from './StepDetails';
 import StepPrompt from './StepPrompt';
 import './App.css';
 import Logo from './assets/images/logo.svg';
+import Home from './assets/images/HomeIcon.svg';
+import QueryStats from './assets/images/flowChart.png';
 
 const drawerWidth = 50;
 
@@ -70,12 +72,12 @@ const Sidebar = () => (
     <List sx={{ width: '100%', marginTop: '40px' }}>
       <ListItem button component={Link} to="/" sx={{ justifyContent: 'center' }}>
         <ListItemIcon sx={{ justifyContent: 'center', color: '#0000008a', minWidth:'50px' }}>
-          <HomeIcon />
+          <img src={Home} alt="Home" style={{ height: '24px' }} />
         </ListItemIcon>
       </ListItem>
       <ListItem button component={Link} to="/custom-query" sx={{ justifyContent: 'center' }}>
         <ListItemIcon sx={{ justifyContent: 'center', color: '#0000008a', minWidth:'50px' }}>
-          <QueryStatsIcon />
+          <img src={QueryStats} alt="QueryStats" style={{ height: '24px' }} />
         </ListItemIcon>
       </ListItem>
     </List>
@@ -118,7 +120,7 @@ const MultiStepForm = ({ steps, optionType }) => {
   };
 
   return (
-    <div>
+    <>
       <Stepper steps={steps} currentStep={currentStepIndex} />
       <div className="step-content" style={{ height: '500px' }}>{renderStepContent()}</div>
       <div className="mt-3 text-end">
@@ -133,7 +135,7 @@ const MultiStepForm = ({ steps, optionType }) => {
           </button>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

@@ -100,7 +100,7 @@ function App() {
   };
  
   return (
-    <Box display="flex" height="100vh" bgcolor="#f9fafb" className="p-0">
+    <Box display="flex" height="100%" bgcolor="#f9fafb" className="p-0">
       {/* Header Section */}
       {/* <Header /> Add the Header component here */}
       {/* Sidebar */}

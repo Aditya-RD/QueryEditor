@@ -2,11 +2,12 @@ import React from 'react';
 import Button from '@mui/material/Button'; // Import MUI Button
 import CheckIcon from '@mui/icons-material/Check'; // Import MUI Check Icon
 import './Stepper.css';
+import QueryStats from './assets/images/flowChart.png';
 
 const Stepper = ({ steps, currentStep }) => {
   return (
     <div className="stepper-wrapper">
-      <span className="stepper-title">Create Query</span>
+      <span className="stepper-title"><img src={QueryStats} alt="QueryStats" style={{ height: '24px', marginRight: '10px', marginTop: '-7px' }} /> Create Query</span>
       <div className="stepper-container">
         {steps.map((step, index) => (
           <React.Fragment key={index}>
