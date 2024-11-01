@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+// flexiSplit.js
+import React, { useEffect, useRef, useImperativeHandle } from 'react';
 import Split from 'split.js';
 import './FlexiSplit.css';
 
-const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
+const FlexiSplit = React.forwardRef(({ element1Id, element2Id, options = {}, children }, ref) => {
   const panel1Ref = useRef(null);
   const panel2Ref = useRef(null);
   const gutterRef = useRef(null);
@@ -12,8 +13,6 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
   useEffect(() => {
     const element1 = panel1Ref.current;
     const element2 = panel2Ref.current;
-
-    // Apply CSS class based on direction
     const container = element1.parentElement;
     const containerClass = options.direction === 'vertical' ? 'vertical-container' : 'horizontal-container';
     container.classList.add(containerClass);
@@ -62,18 +61,11 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
 
   const collapsePanel = () => {
     const { direction } = options;
-    if (direction === 'vertical') {
-      splitInstanceRef.current.setSizes([100, 0]);
-      panel2Ref.current.style.display = 'none';
-    } else {
-      splitInstanceRef.current.setSizes([100, 0]);
-      panel2Ref.current.style.display = 'none';
-    }
-
-    // Add 'gutter-disabled' to gutter only, not the button
+    splitInstanceRef.current.setSizes([100, 0]);
+    panel2Ref.current.style.display = 'none';
     gutterRef.current.classList.add('gutter-disabled');
-    buttonRef.current.classList.remove('gutter-disabled'); // Keep the button enabled
-    updateButtonIcon(direction, 'expand');
+    buttonRef.current && buttonRef.current.classList.remove('gutter-disabled');
+    buttonRef.current && updateButtonIcon(direction, 'expand');
     options.initiallyCollapsed = true;
   };
 
@@ -81,12 +73,9 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
     const { direction, percentage1 = 50, percentage2 = 50 } = options;
     panel1Ref.current.style.display = 'block';
     panel2Ref.current.style.display = 'block';
-
     splitInstanceRef.current.setSizes([percentage1, percentage2]);
-
-    // Remove 'gutter-disabled' from gutter only, not the button
     gutterRef.current.classList.remove('gutter-disabled');
-    updateButtonIcon(direction, 'collapse');
+    buttonRef.current && updateButtonIcon(direction, 'collapse');
     options.initiallyCollapsed = false;
   };
 
@@ -100,7 +89,13 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
     buttonRef.current.innerHTML = `<i title="${action === 'expand' ? 'Expand' : 'Collapse'}" class="fs-arrow ${arrowDir}"></i>`;
   };
 
-  // Split children into two arrays for each panel
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    expandPanel,
+    collapsePanel,
+    toggleCollapse
+  }));
+
   const panel1Children = Array.isArray(children) ? children[0] : children;
   const panel2Children = Array.isArray(children) ? children[1] : null;
 
@@ -114,6 +109,6 @@ const FlexiSplit = ({ element1Id, element2Id, options = {}, children }) => {
       </div>
     </div>
   );
-};
+});
 
 export default FlexiSplit;
