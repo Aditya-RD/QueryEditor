@@ -1,8 +1,8 @@
 // StepSources.js
-
 import React, { useState, useEffect } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import './StepSources.css';
+// Import your database icons here
 import MSSQLIcon from './assets/images/MSSQL.png';
 import ORACLEIcon from './assets/images/ORACLE.png';
 import SNOWFLAKEIcon from './assets/images/SNOWFLAKE.svg';
@@ -23,7 +23,7 @@ const imageMap = {
   6: MYSQLIcon,
   38: HIVEIcon,
   7: HANAIcon,
-  34: DATABRICKSIcon
+  34: DATABRICKSIcon,
 };
 
 const StepSources = ({ selectedSource, setSelectedSource }) => {
@@ -52,7 +52,9 @@ const StepSources = ({ selectedSource, setSelectedSource }) => {
       if (!response.ok) throw new Error('Failed to fetch sources');
 
       const data = await response.json();
-      const rdbmsSources = data.filter(source => source.dataSourceCategory === 'RDBMS');
+      const rdbmsSources = data.filter(
+        (source) => source.dataSourceCategory === 'RDBMS'
+      );
       setSources(rdbmsSources);
     } catch (error) {
       console.error('Error fetching sources:', error);
@@ -62,9 +64,13 @@ const StepSources = ({ selectedSource, setSelectedSource }) => {
     }
   };
 
-  const filteredSources = sources.filter(source =>
+  const filteredSources = sources.filter((source) =>
     source.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleSourceSelect = (source) => {
+    setSelectedSource(source);
+  };
 
   return (
     <div className="source-selection-container">
@@ -99,10 +105,13 @@ const StepSources = ({ selectedSource, setSelectedSource }) => {
                 name="source"
                 id={`source-${source.id}`}
                 value={source.id}
-                checked={selectedSource.id === source.id}
-                onChange={() => setSelectedSource(source)}
+                checked={selectedSource?.id === source.id}
+                onChange={() => handleSourceSelect(source)}
               />
-              <label className="form-check-label d-flex align-items-center" htmlFor={`source-${source.id}`}>
+              <label
+                className="form-check-label d-flex align-items-center"
+                htmlFor={`source-${source.id}`}
+              >
                 <img
                   height={16}
                   src={imageMap[source.dataSourceId] || DefaultIcon}

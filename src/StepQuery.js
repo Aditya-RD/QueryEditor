@@ -1,5 +1,5 @@
 // StepQuery.js
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Tabs,
   Tab,
@@ -34,7 +34,15 @@ import LeftArrow from './assets/images/left-arrow-navigator.svg';
 
 const SQLEditor = ({ value, onChange, onCreateEditor }) => {
   return (
-    <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+    <div
+      style={{
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflowY: 'auto',
+      }}
+    >
       <CodeMirror
         value={value}
         extensions={[sql()]}
@@ -43,7 +51,7 @@ const SQLEditor = ({ value, onChange, onCreateEditor }) => {
           lineWrapping: true,
         }}
         onChange={onChange}
-        onCreateEditor={onCreateEditor} // Pass the onCreateEditor prop
+        onCreateEditor={onCreateEditor}
         style={{ height: '100%', overflow: 'auto' }}
       />
     </div>
@@ -104,31 +112,11 @@ const executeQuery = async (queryText) => {
 };
 
 // StepQuery component begins here
-const StepQuery = ({ selectedSource }) => {
-  const isGenAI = window.location.href.includes("gen-ai");
-  const [tabs, setTabs] = useState([{
-    id: 0,
-    title: 'Worksheet 1',
-    content: '',
-    promptOpen: isGenAI,
-    gridData: null,
-    resultsLoading: false, // Added this line
-    innerTabIndex: 0,
-    splitterOptions: {
-      percentage1: 50,
-      percentage2: 50,
-      minSize1: 100,
-      minSize2: 100,
-      gutterSize: 2,
-      direction: 'vertical',
-      collapseButtonVisible: true,
-      initiallyCollapsed: true,
-    }
-  }]);
+const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, setTabs, activeTabIndex, setActiveTabIndex, nextTabId, setNextTabId }) => {
+  const isGenAI = optionType === 'gen-ai';
   const [editingTabId, setEditingTabId] = useState(null);
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [nextTabId, setNextTabId] = useState(1);
-  const [loading, setLoading] = useState(false); // For prompt loading
+  
+  const [loading, setLoading] = useState(false);
   const editorRefs = useRef({});
 
   const [parentSplitOptions] = useState({
@@ -142,9 +130,13 @@ const StepQuery = ({ selectedSource }) => {
     initiallyCollapsed: true,
   });
 
-  // Refs for parent and child FlexiSplit
   const parentFlexiSplitRef = useRef(null);
   const childFlexiSplitRefs = useRef({});
+
+  useEffect(() => {
+    // Update the content in the parent state whenever it changes
+    setQueryData(tabs[activeTabIndex]?.content);
+  }, [tabs, activeTabIndex, setQueryData]);
 
   // Handlers for the parent FlexiSplit
   const handleExpandParentPanel = () => {
@@ -233,14 +225,13 @@ const StepQuery = ({ selectedSource }) => {
   };
 
   const handleAddTab = () => {
-    const isGenAI = window.location.href.includes("gen-ai");
     const newTab = {
       id: nextTabId,
       title: `Worksheet ${nextTabId + 1}`,
       content: '',
       promptOpen: isGenAI,
       gridData: null,
-      resultsLoading: false, // Added this line
+      resultsLoading: false,
       innerTabIndex: 0,
       splitterOptions: {
         percentage1: 50,
@@ -251,7 +242,7 @@ const StepQuery = ({ selectedSource }) => {
         direction: 'vertical',
         collapseButtonVisible: true,
         initiallyCollapsed: true,
-      }
+      },
     };
     setTabs((prevTabs) => [...prevTabs, newTab]);
     setActiveTabIndex(tabs.length);

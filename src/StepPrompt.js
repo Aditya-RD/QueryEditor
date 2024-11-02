@@ -1,5 +1,11 @@
+// StepPrompt.js
 import React, { useState } from 'react';
-import { TextField, IconButton, InputAdornment, Typography } from '@mui/material';
+import {
+  TextField,
+  IconButton,
+  InputAdornment,
+  Typography,
+} from '@mui/material';
 import { Send } from '@mui/icons-material';
 import magicwand from './magic-wand.png';
 
@@ -43,7 +49,13 @@ function AiQueryPopup({ onInsertText }) {
         InputProps={{
           startAdornment: (
             <InputAdornment position="start" style={{ marginTop: '-66px' }}>
-              <Typography variant="body2"><img src={magicwand} alt="Magic Wand" style={{ width: '20px', height: '20px', marginTop: '-5px' }} /></Typography>
+              <Typography variant="body2">
+                <img
+                  src={magicwand}
+                  alt="Magic Wand"
+                  style={{ width: '20px', height: '20px', marginTop: '-5px' }}
+                />
+              </Typography>
             </InputAdornment>
           ),
           style: { fontSize: '16px', background: '#fff' },
