@@ -29,6 +29,7 @@
     "react-scripts": "^5.0.1",
     "react-treebeard": "^3.2.4",
     "split.js": "^1.6.5",
+    "sql-formatter": "^15.4.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

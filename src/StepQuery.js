@@ -6,17 +6,20 @@ import {
   Box,
   IconButton,
   Button,
+  TextField,
   Typography,
   CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import DatabaseTree from './DatabaseTree'; import CodeMirror from '@uiw/react-codemirror';
+import DatabaseTree from './DatabaseTree';
+import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import FlexiSplit from './FlexiSplit';
+import { format } from 'sql-formatter';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import './App.css';
+import './StepQuery.css';
 import AiQueryPopup from './StepPrompt';
 import magicwandIcon from './magic-wand.png';
 import PlayArrowIcon from './assets/images/run-query.svg';
@@ -30,7 +33,7 @@ import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
 
 
-const SQLEditor = ({ value, onChange, onDrop, onDragOver }) => {
+const SQLEditor = ({ value, onChange, onCreateEditor }) => {
   return (
     <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
       <CodeMirror
@@ -41,10 +44,7 @@ const SQLEditor = ({ value, onChange, onDrop, onDragOver }) => {
           lineWrapping: true,
         }}
         onChange={onChange}
-        editorDidMount={(editor) => {
-          editor.dom.addEventListener('dragover', onDragOver);
-          editor.dom.addEventListener('drop', (event) => onDrop(editor, event));
-        }}
+        onCreateEditor={onCreateEditor} // Pass the onCreateEditor prop
         style={{ height: '100%', overflow: 'auto' }}
       />
     </div>
@@ -124,12 +124,14 @@ const StepQuery = ({ selectedSource }) => {
       initiallyCollapsed: true,
     }
   }]);
+  const [editingTabId, setEditingTabId] = useState(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [nextTabId, setNextTabId] = useState(1);
   //const [gridData, setGridData] = useState(null);
   //const [openModal, setOpenModal] = useState(false);
   const [resultsLoading, setResultsLoading] = useState(false); // Add loading state
   const [loading, setLoading] = useState(false); // Add loading state
+  const editorRefs = useRef({});
 
   // const handleOpenModal = () => setOpenModal(true);
   // const handleCloseModal = () => setOpenModal(false);
@@ -179,7 +181,7 @@ const StepQuery = ({ selectedSource }) => {
   const handleExpandChildPanel = (tabId) => {
     setTabs((prevTabs) =>
       prevTabs.map((tab, index) =>
-        index === activeTabIndex ? { ...tab, splitterOptions: {...tab.splitterOptions, initiallyCollapsed: false }} : tab
+        index === activeTabIndex ? { ...tab, splitterOptions: { ...tab.splitterOptions, initiallyCollapsed: false } } : tab
       )
     );
     const splitRef = childFlexiSplitRefs.current[tabId];
@@ -191,7 +193,7 @@ const StepQuery = ({ selectedSource }) => {
   const handleCollapseChildPanel = (tabId) => {
     setTabs((prevTabs) =>
       prevTabs.map((tab, index) =>
-        index === activeTabIndex ? { ...tab, splitterOptions: {...tab.splitterOptions, initiallyCollapsed: true }} : tab
+        index === activeTabIndex ? { ...tab, splitterOptions: { ...tab.splitterOptions, initiallyCollapsed: true } } : tab
       )
     );
     const splitRef = childFlexiSplitRefs.current[tabId];
@@ -203,7 +205,7 @@ const StepQuery = ({ selectedSource }) => {
   const handleToggleChildCollapse = (tabId) => {
     setTabs((prevTabs) =>
       prevTabs.map((tab, index) =>
-        index === activeTabIndex ? { ...tab, splitterOptions: {...tab.splitterOptions, initiallyCollapsed: !tab.splitterOptions }} : tab
+        index === activeTabIndex ? { ...tab, splitterOptions: { ...tab.splitterOptions, initiallyCollapsed: !tab.splitterOptions.initiallyCollapsed } } : tab
       )
     );
     const splitRef = childFlexiSplitRefs.current[tabId];
@@ -291,13 +293,42 @@ const StepQuery = ({ selectedSource }) => {
   };
 
   const handlePrettyPrintQuery = () => {
-    const formattedQuery = tabs[activeTabIndex].content.split(/\s+/).join(' ');
-    setTabs((prevTabs) =>
-      prevTabs.map((tab, index) =>
-        index === activeTabIndex ? { ...tab, content: formattedQuery } : tab
-      )
-    );
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    const { state, dispatch } = editor;
+    const selection = state.selection.main;
+
+    let from = 0;
+    let to = state.doc.length;
+    let textToFormat = state.doc.toString();
+
+    if (!selection.empty) {
+      // Text is selected
+      from = selection.from;
+      to = selection.to;
+      textToFormat = state.doc.sliceString(from, to);
+    }
+
+    try {
+      // Use the 'format' function directly
+      const formattedText = format(textToFormat);
+
+      // Replace the selected text with formatted text
+      dispatch({
+        changes: { from, to, insert: formattedText },
+      });
+    } catch (error) {
+      console.error('Formatting failed:', error);
+      alert('Failed to format SQL. Please check your syntax.');
+    }
   };
+
 
   const handleExportQuery = () => {
     const element = document.createElement('a');
@@ -319,28 +350,70 @@ const StepQuery = ({ selectedSource }) => {
 
   const handleRunQuery = async () => {
     const activeTab = tabs[activeTabIndex];
-    const activeQuery = tabs[activeTabIndex].content;
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    const { state } = editor;
+    const selection = state.selection.main;
+
+    let queryText = '';
+
+    if (!selection.empty) {
+      // Text is selected
+      queryText = state.doc.sliceString(selection.from, selection.to);
+    } else {
+      // No text selected; use entire content
+      queryText = state.doc.toString();
+    }
+
+    // Clear previous grid data for this tab
     setTabs((prevTabs) =>
       prevTabs.map((tab) =>
         tab.id === activeTab.id ? { ...tab, gridData: null } : tab
       )
     );
-    handleExpandChildPanel(activeTab.id);
-    setResultsLoading(true);
-    const data = await executeQuery(activeQuery);
 
-    setResultsLoading(false);
-    if (data) {
-      setTabs((prevTabs) =>
-        prevTabs.map((tab) =>
-          tab.id === activeTab.id ? { ...tab, gridData: data } : tab
-        )
-      );
-    } else {
-      alert('error');
+    // Expand the result panel
+    handleExpandChildPanel(activeTab.id);
+
+    // Show loading indicator
+    setResultsLoading(true);
+
+    try {
+      // Execute the query
+      const data = await executeQuery(queryText);
+
+      // Hide loading indicator
+      setResultsLoading(false);
+
+      if (data) {
+        // Update the grid data with the new results
+        setTabs((prevTabs) =>
+          prevTabs.map((tab) =>
+            tab.id === activeTab.id ? { ...tab, gridData: data } : tab
+          )
+        );
+      } else {
+        alert('Failed to retrieve data');
+      }
+    } catch (error) {
+      console.error('Query execution failed:', error);
+      alert('An error occurred while executing the query.');
+      setResultsLoading(false);
     }
-    setResultsLoading(false);
   };
+
+  // Add the handler function
+  const handleTabTitleChange = (tabId, newTitle) => {
+    setTabs((prevTabs) =>
+      prevTabs.map((tab) => (tab.id === tabId ? { ...tab, title: newTitle } : tab))
+    );
+  };
+
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%' }}>
       <FlexiSplit
@@ -356,22 +429,51 @@ const StepQuery = ({ selectedSource }) => {
                 <Tab
                   key={tab.id}
                   label={
-                    <Box display="flex" alignItems="center" sx={{
-                      '& .close-icon': {
-                        visibility: 'hidden',
-                      },
-                      '&:hover .close-icon': {
-                        visibility: 'visible',
-                      },
-                    }}>
-                      {tab.title}
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      sx={{
+                        '& .close-icon': {
+                          visibility: 'hidden',
+                        },
+                        '&:hover .close-icon': {
+                          visibility: 'visible',
+                        },
+                      }}
+                    >
+                      {editingTabId === tab.id ? (
+                        <TextField
+                          value={tab.title}
+                          onChange={(e) => handleTabTitleChange(tab.id, e.target.value)}
+                          onBlur={() => setEditingTabId(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setEditingTabId(null);
+                            }
+                          }}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          variant="standard"
+                          size="small"
+                        />
+                      ) : (
+                        <span
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setEditingTabId(tab.id);
+                          }}
+                        >
+                          {tab.title}
+                        </span>
+                      )}
                       <IconButton
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteTab(tab.id);
                         }}
-                        className="close-icon">
+                        className="close-icon"
+                      >
                         <CloseIcon fontSize="small" />
                       </IconButton>
                     </Box>
@@ -413,6 +515,9 @@ const StepQuery = ({ selectedSource }) => {
                     onChange={(value) => setTabs((prevTabs) =>
                       prevTabs.map((tab, i) => (i === activeTabIndex ? { ...tab, content: value } : tab))
                     )}
+                    onCreateEditor={(editor) => {
+                      editorRefs.current[tab.id] = editor; // Store the editor instance
+                    }}
                   />
                   <Button
                     variant="outlined"
@@ -488,10 +593,10 @@ const StepQuery = ({ selectedSource }) => {
         <div style={{ height: '100%' }}>
           <h5 className="p-3 m-0" style={{ height: '55px', borderBottom: '1px solid #ccc' }}>
             Source: {selectedSource.name}
-            <div style={{ float: 'right', display: 'flex', alignItems: 'center', gap: '15px', height: '25px' }}>
-              <img src={RefreshIcon} alt="RefreshIcon" title="Refresh" style={{ height: '22px' }} />
-              <img src={SearchIcon} alt="SearchIcon" title="Search" style={{ height: '18px' }} />
-              <img src={LeftArrow} alt="LeftArrow" title="Collapse" style={{ height: '18px' }} />
+            <div style={{ float: 'right', display: 'flex', alignItems: 'center', gap: '10px', height: '25px' }}>
+              <IconButton onClick={handleToggleParentCollapse}><img src={RefreshIcon} alt="NavRefreshIcon" title="Navigator Refresh" style={{ height: '20px' }} /></IconButton>
+              <IconButton onClick={handleToggleParentCollapse}><img src={SearchIcon} alt="NavSearchIcon" title="Navigator Search" style={{ height: '16px' }} /></IconButton>
+              <IconButton onClick={handleToggleParentCollapse}><img src={LeftArrow} alt="NavCloseIcon" title="Navigator Close" style={{ height: '16px' }} /></IconButton>
             </div>
           </h5>
           <DatabaseTree selectedSourceName={selectedSource.name} onDragStart={(e, tablePath) => e.dataTransfer.setData('text/plain', tablePath)} />
