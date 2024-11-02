@@ -32,7 +32,6 @@ import SearchIcon from './assets/images/search.svg';
 import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
 
-
 const SQLEditor = ({ value, onChange, onCreateEditor }) => {
   return (
     <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
@@ -113,6 +112,8 @@ const StepQuery = ({ selectedSource }) => {
     content: '',
     promptOpen: isGenAI,
     gridData: null,
+    resultsLoading: false, // Added this line
+    innerTabIndex: 0,
     splitterOptions: {
       percentage1: 50,
       percentage2: 50,
@@ -127,14 +128,8 @@ const StepQuery = ({ selectedSource }) => {
   const [editingTabId, setEditingTabId] = useState(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [nextTabId, setNextTabId] = useState(1);
-  //const [gridData, setGridData] = useState(null);
-  //const [openModal, setOpenModal] = useState(false);
-  const [resultsLoading, setResultsLoading] = useState(false); // Add loading state
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false); // For prompt loading
   const editorRefs = useRef({});
-
-  // const handleOpenModal = () => setOpenModal(true);
-  // const handleCloseModal = () => setOpenModal(false);
 
   const [parentSplitOptions] = useState({
     percentage1: 70,
@@ -146,19 +141,6 @@ const StepQuery = ({ selectedSource }) => {
     collapseButtonVisible: false,
     initiallyCollapsed: true,
   });
-  // const [childSplitOptions] = useState({
-  //   percentage1: 50,
-  //   percentage2: 50,
-  //   minSize1: 100,
-  //   minSize2: 100,
-  //   gutterSize: 2,
-  //   direction: 'vertical',
-  //   collapseButtonVisible: true,
-  //   initiallyCollapsed: true,
-  // });
-
-  // const handleOpenModal = () => setOpenModal(true);
-  // const handleCloseModal = () => setOpenModal(false);
 
   // Refs for parent and child FlexiSplit
   const parentFlexiSplitRef = useRef(null);
@@ -258,6 +240,8 @@ const StepQuery = ({ selectedSource }) => {
       content: '',
       promptOpen: isGenAI,
       gridData: null,
+      resultsLoading: false, // Added this line
+      innerTabIndex: 0,
       splitterOptions: {
         percentage1: 50,
         percentage2: 50,
@@ -329,7 +313,6 @@ const StepQuery = ({ selectedSource }) => {
     }
   };
 
-
   const handleExportQuery = () => {
     const element = document.createElement('a');
     const file = new Blob([tabs[activeTabIndex].content], { type: 'text/plain' });
@@ -370,40 +353,49 @@ const StepQuery = ({ selectedSource }) => {
       queryText = state.doc.toString();
     }
 
-    // Clear previous grid data for this tab
+    // Clear previous grid data and set resultsLoading to true for this tab
     setTabs((prevTabs) =>
       prevTabs.map((tab) =>
-        tab.id === activeTab.id ? { ...tab, gridData: null } : tab
+        tab.id === activeTab.id
+          ? { ...tab, gridData: null, innerTabIndex: 2, resultsLoading: true }
+          : tab
       )
     );
 
     // Expand the result panel
     handleExpandChildPanel(activeTab.id);
 
-    // Show loading indicator
-    setResultsLoading(true);
-
     try {
       // Execute the query
       const data = await executeQuery(queryText);
 
-      // Hide loading indicator
-      setResultsLoading(false);
-
       if (data) {
-        // Update the grid data with the new results
+        // Update the grid data with the new results and set resultsLoading to false
         setTabs((prevTabs) =>
           prevTabs.map((tab) =>
-            tab.id === activeTab.id ? { ...tab, gridData: data } : tab
+            tab.id === activeTab.id
+              ? { ...tab, gridData: data, innerTabIndex: 2, resultsLoading: false }
+              : tab
           )
         );
       } else {
         alert('Failed to retrieve data');
+        // Set resultsLoading to false in case of failure
+        setTabs((prevTabs) =>
+          prevTabs.map((tab) =>
+            tab.id === activeTab.id ? { ...tab, resultsLoading: false } : tab
+          )
+        );
       }
     } catch (error) {
       console.error('Query execution failed:', error);
       alert('An error occurred while executing the query.');
-      setResultsLoading(false);
+      // Set resultsLoading to false in case of error
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id ? { ...tab, resultsLoading: false } : tab
+        )
+      );
     }
   };
 
@@ -565,26 +557,54 @@ const StepQuery = ({ selectedSource }) => {
                   )}
                 </div>
 
-                {/* Paneli2 - AgGrid */}
-                <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
-                  {resultsLoading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="200px">
-                      <CircularProgress />
-                    </Box>
-                  ) : (
-                    tab.gridData ? (
-                      <AgGridReact
-                        columnDefs={tab.gridData.columns.map(col => ({
-                          headerName: col.columnName,
-                          field: col.columnName,
-                          type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn',
-                        }))}
-                        rowData={tab.gridData.rows}
-                      />
-                    ) : (
-                      <div className="previewGrid">Run a query to see results here</div>
-                    )
-                  )}
+                {/* Paneli2 - Tabs with Saved Queries, Executed Queries, and Result */}
+                <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Tabs
+                    value={tab.innerTabIndex}
+                    onChange={(e, newIndex) => {
+                      // Update the innerTabIndex for this tab
+                      setTabs(prevTabs =>
+                        prevTabs.map((t, i) => i === activeTabIndex ? { ...t, innerTabIndex: newIndex } : t)
+                      );
+                    }}
+                  >
+                    <Tab label="Saved Queries" />
+                    <Tab label="Executed Queries" />
+                    <Tab label="Result" />
+                  </Tabs>
+                  <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                    {tab.innerTabIndex === 0 && (
+                      // Content for Saved Queries
+                      <div>Saved Queries content goes here</div>
+                    )}
+                    {tab.innerTabIndex === 1 && (
+                      // Content for Executed Queries
+                      <div>Executed Queries content goes here</div>
+                    )}
+                    {tab.innerTabIndex === 2 && (
+                      // Content for Result
+                      <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
+                        {tab.resultsLoading ? (
+                          <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+                            <CircularProgress />
+                          </Box>
+                        ) : (
+                          tab.gridData ? (
+                            <AgGridReact
+                              columnDefs={tab.gridData.columns.map(col => ({
+                                headerName: col.columnName,
+                                field: col.columnName,
+                                type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn',
+                              }))}
+                              rowData={tab.gridData.rows}
+                            />
+                          ) : (
+                            <div className="previewGrid">Run a query to see results here</div>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </FlexiSplit>
             </div>
