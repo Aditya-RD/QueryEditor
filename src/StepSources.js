@@ -1,5 +1,5 @@
 // StepSources.js
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import './StepSources.css';
 // Import your database icons here
@@ -26,50 +26,22 @@ const imageMap = {
   34: DATABRICKSIcon,
 };
 
-const StepSources = ({ selectedSource, setSelectedSource }) => {
-  const [sources, setSources] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchSources();
-  }, []);
-
-  const fetchSources = async () => {
-    try {
-      const bearerToken = process.env.REACT_APP_BEARER_TOKEN || 'defaultToken';
-      const response = await fetch(
-        'https://dx-qast.getrightdata.com/dweb/connections/jdbc/all',
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${bearerToken}`
-          }
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch sources');
-
-      const data = await response.json();
-      const rdbmsSources = data.filter(
-        (source) => source.dataSourceCategory === 'RDBMS'
-      );
-      setSources(rdbmsSources);
-    } catch (error) {
-      console.error('Error fetching sources:', error);
-      setError('Failed to load sources. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+const StepSources = ({
+  selectedSource,
+  setSelectedSource,
+  sources,
+  loading,
+  error,
+  searchTerm,
+  setSearchTerm,
+}) => {
 
   const filteredSources = sources.filter((source) =>
     source.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSourceSelect = (source) => {
-    setSelectedSource(source);
+    setSelectedSource({id:source.id,name:source.name});
   };
 
   return (

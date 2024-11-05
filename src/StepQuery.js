@@ -31,8 +31,11 @@ import RefreshIcon from './assets/images/refresh.svg';
 import SearchIcon from './assets/images/search.svg';
 import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
+import {executeQueryService} from './services/executeQuery.js';
+import { genAiService } from './services/genAiService.js';
 
-const SQLEditor = ({ value, onChange, onCreateEditor }) => {
+const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
+  const editorRef = useRef(null);
   return (
     <div
       style={{
@@ -50,8 +53,16 @@ const SQLEditor = ({ value, onChange, onCreateEditor }) => {
           lineNumbers: true,
           lineWrapping: true,
         }}
-        onChange={onChange}
-        onCreateEditor={onCreateEditor}
+        onCreateEditor={(editor) => {
+          editorRef.current = editor;
+          if (onCreateEditor) onCreateEditor(editor);
+        }}
+        onBlur={() => {
+          if (editorRef.current) {
+            const content = editorRef.current.state.doc.toString();
+            onBlur(content); // Call onBlur with the current content
+          }
+        }}
         style={{ height: '100%', overflow: 'auto' }}
       />
     </div>
@@ -61,42 +72,8 @@ const SQLEditor = ({ value, onChange, onCreateEditor }) => {
 // New function to execute the query and fetch results
 const executeQuery = async (queryText) => {
   try {
-    const bearerToken = process.env.REACT_APP_BEARER_TOKEN;
-    const response = await fetch('https://dx-qast.getrightdata.com/dbexplorer/services/run-query', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${bearerToken}`
-      },
-      body: JSON.stringify({
-        sourceType: "RDBMS_QUERY_SERVICE",
-        source: {
-          type: "MSSQL",
-          profileId: null,
-          connectionInfo: {
-            existingConnection: false,
-            connectionJDBCURL: "jdbc:sqlserver://10.10.20.203:1433",
-            username: "rd_db_load",
-            password: "J93EmKePkG/M9kzQTUxqcg==",
-            className: "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-            schema: null,
-            catalog: null
-          },
-          sourceInfo: {
-            id: "1",
-            sourceTableOrQuery: queryText, // Active tab's query text
-            blendColumns: null,
-            driverTable: false
-          },
-          datasetJoins: null,
-          purpose: "dataPreview",
-          skipRows: 0,
-          previewCount: 10,
-          guid: Math.random() // Random GUID for each request
-        }
-      })
-    });
-    const result = await response.json();
+    
+    const result = await executeQueryService({queryText:queryText});
     if (result.flag && result.data && result.columns) {
       return {
         columns: JSON.parse(result.columns),
@@ -199,17 +176,8 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
   const handleInsertText = async (text) => {
     setLoading(true); // Start loading
     try {
-      const response = await fetch('http://127.0.0.1:5000/get_data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      
+      const result = await genAiService(text);
       const outputText = result.output;
       setTabs((prevTabs) =>
         prevTabs.map((tab, i) =>
@@ -427,8 +395,13 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
                       {editingTabId === tab.id ? (
                         <TextField
                           value={tab.title}
-                          onChange={(e) => handleTabTitleChange(tab.id, e.target.value)}
-                          onBlur={() => setEditingTabId(null)}
+                          onChange={(e) => setTabs((prevTabs) =>
+                            prevTabs.map((tabItem) => tabItem.id === tab.id ? { ...tabItem, title: e.target.value } : tabItem)
+                          )}
+                          onBlur={() => {
+                            handleTabTitleChange(tab.id, tab.title);
+                            setEditingTabId(null);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               setEditingTabId(null);
@@ -495,7 +468,7 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
                   {/* SQL Editor */}
                   <SQLEditor
                     value={tab.content}
-                    onChange={(value) => setTabs((prevTabs) =>
+                    onBlur={(value) => setTabs((prevTabs) =>
                       prevTabs.map((tab, i) => (i === activeTabIndex ? { ...tab, content: value } : tab))
                     )}
                     onCreateEditor={(editor) => {

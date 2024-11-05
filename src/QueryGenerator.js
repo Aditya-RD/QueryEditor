@@ -1,14 +1,17 @@
 // QueryGenerator.js
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Stepper from './Stepper';
 import StepSources from './StepSources';
 import StepQuery from './StepQuery';
 import StepDetails from './StepDetails';
 import { Box, Button } from '@mui/material';
+import { listOfProfiles } from './services/listOfProfiles';
+import { getWorksheetsByWorkookId } from './services/worksheets';
 //import './QueryGenerator.css';
 
 const QueryGenerator = ({ optionType }) => {
+  const { id } = useParams();
   const steps = ['Sources', 'Query', 'Details'];
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedSource, setSelectedSource] = useState(null);
@@ -38,7 +41,51 @@ const QueryGenerator = ({ optionType }) => {
       },
     },
   ]);
+
+  // New state for sources and related data
+  const [sources, setSources] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
+
+  const fetchSources = async () => {
+    try {
+      const data = await listOfProfiles();
+      const rdbmsSources = data.filter(
+        (source) => source.dataSourceCategory === 'RDBMS'
+      );
+      setSources(rdbmsSources);
+    } catch (error) {
+      console.error('Error fetching sources:', error);
+      setError('Failed to load sources. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchWorksheets = async () => {
+    try {
+      const data = await getWorksheetsByWorkookId(id);
+      // Handle the data from the API
+      console.log(data);
+    } catch (error) {
+      console.error("Error fetching worksheets:", error);
+    }
+  };
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      if (sources.length === 0) {
+        await fetchSources();
+      }
+      if (id) {
+        await fetchWorksheets();
+      }
+    };
+    fetchData();
+  }, [id]);
 
   const handleNext = () => {
     // Validation before proceeding
@@ -83,6 +130,11 @@ const QueryGenerator = ({ optionType }) => {
           <StepSources
             selectedSource={selectedSource}
             setSelectedSource={setSelectedSource}
+            sources={sources}
+            loading={loading}
+            error={error}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
           />
         );
       case 'Query':

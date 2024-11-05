@@ -20,8 +20,8 @@ const App = () => {
         <main className="content">
           <Routes>
             <Route path="/" element={<SelectOptions />} />
-            <Route path="/custom-query/*" element={<QueryGenerator optionType="custom-query" />} />
-            <Route path="/gen-ai/*" element={<QueryGenerator optionType="gen-ai" />} />
+            <Route path="/custom-query/:id?" element={<QueryGenerator optionType="custom-query" />} />
+            <Route path="/gen-ai/:id?" element={<QueryGenerator optionType="gen-ai" />} />
             {/* Uncomment if you have a separate Gen AI component */}
             {/* <Route path="/gen-ai/*" element={<GenAIComponent />} /> */}
             <Route path="*" element={<Navigate to="/" />} />
