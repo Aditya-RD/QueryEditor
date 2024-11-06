@@ -68,24 +68,75 @@ const QueryGenerator = ({ optionType }) => {
   const fetchWorksheets = async () => {
     try {
       const data = await getWorksheetsByWorkookId(id);
-      // Handle the data from the API
+      if (data) {
+        const sourceId = data.workbook.ProfileID;
+        setSelectedSourceById(sourceId);
+
+        setCurrentStepIndex(1);
+
+        const tabsList = data.worksheets.map((sheet) => {
+            return {
+              id: sheet.WorksheetID,
+              title: sheet.Name,
+              content: sheet.EditorText,
+              promptOpen: optionType === 'gen-ai',
+              gridData: null,
+              resultsLoading: false,
+              innerTabIndex: 0,
+              splitterOptions: {
+                percentage1: 50,
+                percentage2: 50,
+                minSize1: 100,
+                minSize2: 100,
+                gutterSize: 2,
+                direction: 'vertical',
+                collapseButtonVisible: true,
+                initiallyCollapsed: true,
+              },
+            }
+        })
+
+        setTabs(tabsList);
+
+        setNextTabId((tabsList.length + 1));
+        
+        setQueryDetails({
+          name:data.workbook.Name,
+          description:data.workbook.Description
+        });
+
+      }
       console.log(data);
     } catch (error) {
       console.error("Error fetching worksheets:", error);
     }
   };
+
+  const setSelectedSourceById = (sourceId) => {
+    const matchingSource = sources.find((source) => source.id === sourceId);
+    if (matchingSource) {
+      setSelectedSource({
+        id: matchingSource.id,
+        name: matchingSource.name,
+      });
+    } else {
+      console.warn('No matching source found for worksheet ID:', sourceId);
+    }
+  };
   
+  // Fetch sources only once when the component mounts
   useEffect(() => {
-    const fetchData = async () => {
-      if (sources.length === 0) {
-        await fetchSources();
-      }
-      if (id) {
-        await fetchWorksheets();
-      }
-    };
-    fetchData();
-  }, [id]);
+    if (sources.length === 0) {
+      fetchSources();
+    }
+  }, []); // Empty dependency array ensures this only runs once
+
+  // Fetch worksheets and set selected source once id and sources are available
+  useEffect(() => {
+    if (id && sources.length > 0) {
+      fetchWorksheets();
+    }
+  }, [id, sources]); // Runs only when id or sources are set
 
   const handleNext = () => {
     // Validation before proceeding
