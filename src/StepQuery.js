@@ -36,6 +36,8 @@ import SaveIcon from './assets/images/save-icon.svg';
 import { executeQueryService } from './services/executeQuery.js';
 import { genAiService } from './services/genAiService.js';
 import { createWorksheet, deleteWorksheet, updateWorksheet } from './services/worksheets.js';
+import { getWorksheetExecutedQueries } from './services/executedQueries.js';
+import { getWorksheetSavedQueries } from './services/savedQueries.js';
 import * as XLSX from 'xlsx';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
@@ -209,9 +211,13 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
         title: `Worksheet ${nextTabNumber}`,
         content: '',
         promptOpen: isGenAI,
-        gridData: null,
-        resultsLoading: false,
-        innerTabIndex: 0,
+        innerTabIndex: 2,
+        resultsGridData: null,
+        resultsGridLoading: false,
+        executedQueriesGridData: null,
+        executedQueriesGridLoading: false,
+        savedQueriesGridData: null,
+        savedQueriesGridLoading: false,
         splitterOptions: {
           percentage1: 50,
           percentage2: 50,
@@ -399,11 +405,11 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       queryText = state.doc.toString();
     }
 
-    // Clear previous grid data and set resultsLoading to true for this tab
+    // Clear previous grid data and set resultsGridLoading to true for this tab
     setTabs((prevTabs) =>
       prevTabs.map((tab) =>
         tab.id === activeTab.id
-          ? { ...tab, gridData: null, innerTabIndex: 2, resultsLoading: true }
+          ? { ...tab, resultsGridData: null, innerTabIndex: 2, resultsGridLoading: true }
           : tab
       )
     );
@@ -416,30 +422,30 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       const data = await executeQuery(queryText);
 
       if (data) {
-        // Update the grid data with the new results and set resultsLoading to false
+        // Update the grid data with the new results and set resultsGridLoading to false
         setTabs((prevTabs) =>
           prevTabs.map((tab) =>
             tab.id === activeTab.id
-              ? { ...tab, gridData: data, innerTabIndex: 2, resultsLoading: false }
+              ? { ...tab, resultsGridData: data, innerTabIndex: 2, resultsGridLoading: false }
               : tab
           )
         );
       } else {
         alert('Failed to retrieve data');
-        // Set resultsLoading to false in case of failure
+        // Set resultsGridLoading to false in case of failure
         setTabs((prevTabs) =>
           prevTabs.map((tab) =>
-            tab.id === activeTab.id ? { ...tab, resultsLoading: false } : tab
+            tab.id === activeTab.id ? { ...tab, resultsGridLoading: false } : tab
           )
         );
       }
     } catch (error) {
       console.error('Query execution failed:', error);
       alert('An error occurred while executing the query.');
-      // Set resultsLoading to false in case of error
+      // Set resultsGridLoading to false in case of error
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
-          tab.id === activeTab.id ? { ...tab, resultsLoading: false } : tab
+          tab.id === activeTab.id ? { ...tab, resultsGridLoading: false } : tab
         )
       );
     }
@@ -480,16 +486,26 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
 
     switch (activeTab.innerTabIndex) {
       case 0: // Saved Queries
-        dataToDownload = [/* Add your saved queries data here as objects */];
-        sheetName = 'SavedQueries';
+        if (activeTab.savedQueriesGridData) {
+          dataToDownload = activeTab.savedQueriesGridData; // Assume this is an array of objects representing each row
+          sheetName = 'SavedQueries';
+        } else {
+          alert('No data to export in Results');
+          return;
+        }
         break;
       case 1: // Executed Queries
-        dataToDownload = [/* Add your executed queries data here as objects */];
-        sheetName = 'ExecutedQueries';
+        if (activeTab.executedQueriesGridData) {
+          dataToDownload = activeTab.executedQueriesGridData; // Assume this is an array of objects representing each row
+          sheetName = 'ExecutedQueries';
+        } else {
+          alert('No data to export in Results');
+          return;
+        }
         break;
       case 2: // Result
-        if (activeTab.gridData) {
-          dataToDownload = activeTab.gridData.rows; // Assume this is an array of objects representing each row
+        if (activeTab.resultsGridData) {
+          dataToDownload = activeTab.resultsGridData.rows; // Assume this is an array of objects representing each row
           sheetName = 'Results';
         } else {
           alert('No data to export in Results');
@@ -545,6 +561,66 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       queryText = state.doc.toString();
     }
     alert('Query saved successfully');
+  };
+
+  // Handlers for fetching executed queries
+  const fetchExecutedQueries = async (worksheetId) => {
+    const activeTab = tabs[activeTabIndex];
+    setTabs((prevTabs) =>
+      prevTabs.map((tab) =>
+        tab.id === activeTab.id
+          ? { ...tab, executedQueriesGridData: null, executedQueriesGridLoading: true }
+          : tab
+      )
+    );
+
+    try {
+      const data = await getWorksheetExecutedQueries(worksheetId);
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id
+            ? { ...tab, executedQueriesGridData: data, executedQueriesGridLoading: false }
+            : tab
+        )
+      );
+    } catch (error) {
+      console.error('Failed to fetch executed queries:', error);
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id ? { ...tab, executedQueriesGridLoading: false } : tab
+        )
+      );
+    }
+  };
+
+  // Handlers for fetching saved queries
+  const fetchSavedQueries = async (worksheetId) => {
+    const activeTab = tabs[activeTabIndex];
+    setTabs((prevTabs) =>
+      prevTabs.map((tab) =>
+        tab.id === activeTab.id
+          ? { ...tab, savedQueriesGridData: null, savedQueriesGridLoading: true }
+          : tab
+      )
+    );
+
+    try {
+      const data = await getWorksheetSavedQueries(worksheetId);
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id
+            ? { ...tab, savedQueriesGridData: data, savedQueriesGridLoading: false }
+            : tab
+        )
+      );
+    } catch (error) {
+      console.error('Failed to fetch saved queries:', error);
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id ? { ...tab, savedQueriesGridLoading: false } : tab
+        )
+      );
+    }
   };
 
   return (
@@ -710,11 +786,24 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                   <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
                     <Tabs
                       value={tab.innerTabIndex}
+                      // onChange={(e, newIndex) => {
+                      //   // Update the innerTabIndex for this tab
+                      //   setTabs(prevTabs =>
+                      //     prevTabs.map((t, i) => i === activeTabIndex ? { ...t, innerTabIndex: newIndex } : t)
+                      //   );
+                      // }}
                       onChange={(e, newIndex) => {
                         // Update the innerTabIndex for this tab
                         setTabs(prevTabs =>
                           prevTabs.map((t, i) => i === activeTabIndex ? { ...t, innerTabIndex: newIndex } : t)
                         );
+
+                        // Trigger data fetch based on the selected sub-tab
+                        if (newIndex === 1) {
+                          fetchExecutedQueries(tab.id);
+                        } else if (newIndex === 0) {
+                          fetchSavedQueries(tab.id);
+                        }
                       }}
                       sx={{ flexGrow: 1 }}
                     >
@@ -729,30 +818,67 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                   </Box>
                   <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {tab.innerTabIndex === 0 && (
-                      // Content for Saved Queries
-                      <div>Saved Queries content goes here</div>
-                    )}
-                    {tab.innerTabIndex === 1 && (
-                      // Content for Executed Queries
-                      <div>Executed Queries content goes here</div>
-                    )}
-                    {tab.innerTabIndex === 2 && (
-                      // Content for Result
                       <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
-                        {tab.resultsLoading ? (
+                        {tab.savedQueriesGridLoading ? (
                           <Box display="flex" justifyContent="center" alignItems="center" height="200px">
                             <CircularProgress />
                           </Box>
                         ) : (
-                          tab.gridData ? (
+                          tab.savedQueriesGridData ? (
                             <AgGridReact
-                              columnDefs={tab.gridData.columns.map(col => ({
+                              columnDefs={[
+                                { headerName: 'Saved Query', field: 'QueryText' },
+                                { headerName: 'Saved By', field: 'savedBy' },
+                                { headerName: 'Saved On', field: 'savedOn' },
+                              ]}
+                              rowData={tab.savedQueriesGridData}
+                            />
+                          ) : (
+                            <div>No saved queries available.</div>
+                          )
+                        )}
+                      </div>
+                    )}
+                    {tab.innerTabIndex === 1 && (
+                      <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
+                        {tab.executedQueriesGridLoading ? (
+                          <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+                            <CircularProgress />
+                          </Box>
+                        ) : (
+                          tab.executedQueriesGridData ? (
+                            <AgGridReact
+                              columnDefs={[
+                                { headerName: 'Executed Result', field: 'QueryText' },
+                                { headerName: 'Execution Result', field: 'ExecutionResult' },
+                                { headerName: 'Executed By', field: 'executedBy' },
+                                { headerName: 'Executed On', field: 'executedOn' },
+                              ]}
+                              rowData={tab.executedQueriesGridData}
+                            />
+                          ) : (
+                            <div>No executed queries available.</div>
+                          )
+                        )}
+                      </div>
+                    )}
+                    {tab.innerTabIndex === 2 && (
+                      // Content for Result
+                      <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
+                        {tab.resultsGridLoading ? (
+                          <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+                            <CircularProgress />
+                          </Box>
+                        ) : (
+                          tab.resultsGridData ? (
+                            <AgGridReact
+                              columnDefs={tab.resultsGridData.columns.map(col => ({
                                 headerName: col.columnName,
                                 field: col.columnName,
                                 type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn',
                                 headerClass: 'custom-header',
                               }))}
-                              rowData={tab.gridData.rows}
+                              rowData={tab.resultsGridData.rows}
                             />
                           ) : (
                             <div className="previewGrid">Run a query to see results here</div>
