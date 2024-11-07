@@ -31,8 +31,8 @@ function SelectOptions() {
       let data = await getWorkbooks();
       data = data.map((v) => ({
         ...v,
-        CreatedBy: 'Sun',
-        ModifiedBy: 'Wealth',
+        CreatedBy: 'Aditya',
+        ModifiedBy: 'Nidhi',
       }));
       setRowData(data);
     };

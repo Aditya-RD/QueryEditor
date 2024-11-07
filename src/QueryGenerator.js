@@ -8,39 +8,30 @@ import StepDetails from './StepDetails';
 import { Box, Button } from '@mui/material';
 import { listOfProfiles } from './services/listOfProfiles';
 import { getWorksheetsByWorkookId } from './services/worksheets';
-//import './QueryGenerator.css';
+import { createWorkbook } from './services/workbooks';
 
 const QueryGenerator = ({ optionType }) => {
   const { id } = useParams();
   const steps = ['Sources', 'Query', 'Details'];
+  const vertical_splitter_options = {
+    percentage1: 50,
+    percentage2: 50,
+    minSize1: 100,
+    minSize2: 100,
+    gutterSize: 2,
+    direction: 'vertical',
+    collapseButtonVisible: true,
+    initiallyCollapsed: true,
+  };
+  const [workbookId,setWorkbookId]=useState(id);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedSource, setSelectedSource] = useState(null);
   const [queryData, setQueryData] = useState('');
   const [queryDetails, setQueryDetails] = useState({ name: '', description: '' });
   const [isCompleted, setIsCompleted] = useState(false);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [nextTabId, setNextTabId] = useState(1);
-  const [tabs, setTabs] = useState([
-    {
-      id: 0,
-      title: 'Worksheet 1',
-      content: '',
-      promptOpen: optionType === 'gen-ai',
-      gridData: null,
-      resultsLoading: false,
-      innerTabIndex: 0,
-      splitterOptions: {
-        percentage1: 50,
-        percentage2: 50,
-        minSize1: 100,
-        minSize2: 100,
-        gutterSize: 2,
-        direction: 'vertical',
-        collapseButtonVisible: true,
-        initiallyCollapsed: true,
-      },
-    },
-  ]);
+  const [nextTabNumber, setNextTabNumber] = useState(1);
+  const [tabs, setTabs] = useState([]);
 
   // New state for sources and related data
   const [sources, setSources] = useState([]);
@@ -82,23 +73,14 @@ const QueryGenerator = ({ optionType }) => {
               promptOpen: optionType === 'gen-ai',
               gridData: null,
               resultsLoading: false,
-              innerTabIndex: 0,
-              splitterOptions: {
-                percentage1: 50,
-                percentage2: 50,
-                minSize1: 100,
-                minSize2: 100,
-                gutterSize: 2,
-                direction: 'vertical',
-                collapseButtonVisible: true,
-                initiallyCollapsed: true,
-              },
+              innerTabIndex: 2,
+              splitterOptions: vertical_splitter_options,
             }
         })
 
         setTabs(tabsList);
 
-        setNextTabId((tabsList.length + 1));
+        setNextTabNumber((tabsList.length + 1));
         
         setQueryDetails({
           name:data.workbook.Name,
@@ -138,11 +120,42 @@ const QueryGenerator = ({ optionType }) => {
     }
   }, [id, sources]); // Runs only when id or sources are set
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validation before proceeding
-    if (steps[currentStepIndex] === 'Sources' && !selectedSource) {
-      alert('Please select a source to continue.');
-      return;
+    if (steps[currentStepIndex] === 'Sources') {
+      if(!selectedSource){
+        alert('Please select a source to continue.');
+        return;
+      }else if(!workbookId){
+        const new_wb = {
+          name: `workbook_${new Date().toLocaleString()}`,
+          description: "", 
+          profileId: selectedSource.id,
+          moduleType: optionType
+        }
+        const wb_create = await createWorkbook(new_wb);
+        if(wb_create.workbookId){
+          setWorkbookId(wb_create.workbookId);
+          setQueryDetails({
+            name: new_wb.name,
+            description: ""
+          });
+          setTabs([
+            {
+              id: wb_create.worksheetId,
+              title: 'Worksheet 1',
+              content: '',
+              promptOpen: optionType === 'gen-ai',
+              gridData: null,
+              resultsLoading: false,
+              innerTabIndex: 2,
+              splitterOptions: vertical_splitter_options,
+            },
+          ]);
+          setNextTabNumber(2);
+          navigate(`${window.location.pathname}/${wb_create.workbookId}`);
+        }
+      }
     }
     if (steps[currentStepIndex] === 'Query' && !queryData) {
       alert('Please enter a query to continue.');
@@ -170,8 +183,9 @@ const QueryGenerator = ({ optionType }) => {
   };
 
   const handleCompleteLastStep = () => {
+    setCurrentStepIndex(2);
     setIsCompleted(true);
-    navigate('/');
+    //navigate('/');
   };
 
   const renderStepContent = () => {
@@ -191,6 +205,7 @@ const QueryGenerator = ({ optionType }) => {
       case 'Query':
         return (
           <StepQuery
+            workbookId={workbookId}
             selectedSource={selectedSource}
             queryData={queryData}
             setQueryData={setQueryData}
@@ -199,13 +214,14 @@ const QueryGenerator = ({ optionType }) => {
             setTabs={setTabs}
             activeTabIndex={activeTabIndex}
             setActiveTabIndex={setActiveTabIndex}
-            nextTabId={nextTabId}
-            setNextTabId={setNextTabId}
+            nextTabNumber={nextTabNumber}
+            setNextTabNumber={setNextTabNumber}
           />
         );
       case 'Details':
         return (
           <StepDetails
+            workbookId={workbookId}
             queryDetails={queryDetails}
             setQueryDetails={setQueryDetails}
             onComplete={handleCompleteLastStep}

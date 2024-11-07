@@ -45,10 +45,10 @@
   color: white; /* White color for checkmark icon */
 }
 
-.stepper-item.active .step-number {
-  background-color: #d4f5b8; /* Light green background for active step */
+/* .stepper-item.active .step-number {
+  background-color: #d4f5b8;
   color: #000;
-}
+} */
 
 .stepper-item .step-name {
   font-size: 14px;

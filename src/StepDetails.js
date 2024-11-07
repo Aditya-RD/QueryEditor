@@ -1,11 +1,16 @@
 // StepDetails.js
 import React from 'react';
 import { Box, Typography, TextField, Button, Paper } from '@mui/material';
+import { updateWorkbook } from './services/workbooks';
 
-const StepDetails = ({ queryDetails, setQueryDetails, onComplete }) => {
-  const handleCreate = () => {
-    // Optionally perform validation or API calls
-    onComplete(); // Finish the process
+const StepDetails = ({ workbookId, queryDetails, setQueryDetails, onComplete }) => {
+  const handleSave = async () => {
+    const workbook_update_res = await updateWorkbook(workbookId, queryDetails);
+    if (workbook_update_res === "ok") {
+      onComplete(); // Finish the process
+    } else {
+      alert('problem updating workbook');
+    }
   };
 
   const handleChange = (field) => (event) => {
@@ -50,8 +55,8 @@ const StepDetails = ({ queryDetails, setQueryDetails, onComplete }) => {
             onChange={handleChange('description')}
           />
           <Box display="flex" mt={3} justifyContent="flex-end">
-            <Button variant="contained" color="primary" onClick={handleCreate}>
-              Create
+            <Button variant="contained" color="primary" onClick={handleSave}>
+              Save
             </Button>
           </Box>
         </Paper>

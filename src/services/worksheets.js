@@ -1,9 +1,9 @@
 const API_HOST = 'http://localhost:5000/'
 
-export const createWorksheet = async ({payload={}}) => {
+export const createWorksheet = async (payload = {}) => {
     try {
         const response = await fetch(
-            API_HOST+`worksheets`,
+            API_HOST + `worksheets`,
             {
                 method: 'POST',
                 headers: {
@@ -12,7 +12,7 @@ export const createWorksheet = async ({payload={}}) => {
                 body: JSON.stringify(payload)
             }
         );
-        
+
         const result = await response.json();
         if (result) {
             return result;
@@ -28,7 +28,7 @@ export const createWorksheet = async ({payload={}}) => {
 export const getWorksheetsByWorkookId = async (workbookId) => {
     try {
         const response = await fetch(
-            API_HOST+`worksheets/${workbookId}`,
+            API_HOST + `worksheets/${workbookId}`,
             {
                 method: 'GET'
             }
@@ -46,10 +46,10 @@ export const getWorksheetsByWorkookId = async (workbookId) => {
     }
 };
 
-export const updateWorksheet = async ({worksheetId=null,payload={}}) => {
+export const updateWorksheet = async ( worksheetId = null, payload = {} ) => {
     try {
         const response = await fetch(
-            API_HOST+`worksheets/${worksheetId}`,
+            API_HOST + `worksheets/${worksheetId}`,
             {
                 method: 'PUT',
                 headers: {
@@ -58,10 +58,9 @@ export const updateWorksheet = async ({worksheetId=null,payload={}}) => {
                 body: JSON.stringify(payload)
             }
         );
-        
-        const result = await response.json();
-        if (result) {
-            return result;
+
+        if (response.ok) {
+            return 'ok';
         } else {
             throw new Error('Failed to retrieve data');
         }
@@ -74,7 +73,7 @@ export const updateWorksheet = async ({worksheetId=null,payload={}}) => {
 export const deleteWorksheet = async (worksheetId) => {
     try {
         const response = await fetch(
-            API_HOST+`worksheets/${worksheetId}`,
+            API_HOST + `worksheets/${worksheetId}`,
             {
                 method: 'DELETE',
                 headers: {
@@ -82,10 +81,8 @@ export const deleteWorksheet = async (worksheetId) => {
                 }
             }
         );
-        
-        const result = await response.json();
-        if (result) {
-            return result;
+        if (response.ok) {
+            return 'ok';
         } else {
             throw new Error('Failed to retrieve data');
         }

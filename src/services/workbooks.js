@@ -1,6 +1,6 @@
 const API_HOST = 'http://localhost:5000/'
 
-export const createWorkbook = async ({payload={}}) => {
+export const createWorkbook = async (payload={}) => {
     try {
         const response = await fetch(
             API_HOST+`workbooks`,
@@ -46,7 +46,7 @@ export const getWorkbooks = async () => {
     }
 };
 
-export const updateWorkbook = async ({workbookId=null,payload={}}) => {
+export const updateWorkbook = async (workbookId=null,payload={}) => {
     try {
         const response = await fetch(
             API_HOST+`workbooks/${workbookId}`,
@@ -58,10 +58,8 @@ export const updateWorkbook = async ({workbookId=null,payload={}}) => {
                 body: JSON.stringify(payload)
             }
         );
-        
-        const result = await response.json();
-        if (result) {
-            return result;
+        if (response.ok) {
+            return 'ok';
         } else {
             throw new Error('Failed to retrieve data');
         }

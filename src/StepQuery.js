@@ -31,8 +31,9 @@ import RefreshIcon from './assets/images/refresh.svg';
 import SearchIcon from './assets/images/search.svg';
 import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
-import {executeQueryService} from './services/executeQuery.js';
+import { executeQueryService } from './services/executeQuery.js';
 import { genAiService } from './services/genAiService.js';
+import { createWorksheet, deleteWorksheet, updateWorksheet } from './services/worksheets.js';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
   const editorRef = useRef(null);
@@ -72,8 +73,8 @@ const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
 // New function to execute the query and fetch results
 const executeQuery = async (queryText) => {
   try {
-    
-    const result = await executeQueryService({queryText:queryText});
+
+    const result = await executeQueryService({ queryText: queryText });
     if (result.flag && result.data && result.columns) {
       return {
         columns: JSON.parse(result.columns),
@@ -89,10 +90,10 @@ const executeQuery = async (queryText) => {
 };
 
 // StepQuery component begins here
-const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, setTabs, activeTabIndex, setActiveTabIndex, nextTabId, setNextTabId }) => {
+const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, optionType, tabs, setTabs, activeTabIndex, setActiveTabIndex, nextTabNumber, setNextTabNumber }) => {
   const isGenAI = optionType === 'gen-ai';
   const [editingTabId, setEditingTabId] = useState(null);
-  
+
   const [loading, setLoading] = useState(false);
   const editorRefs = useRef({});
 
@@ -176,7 +177,7 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
   const handleInsertText = async (text) => {
     setLoading(true); // Start loading
     try {
-      
+
       const result = await genAiService(text);
       const outputText = result.output;
       setTabs((prevTabs) =>
@@ -192,42 +193,54 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
     }
   };
 
-  const handleAddTab = () => {
-    const newTab = {
-      id: nextTabId,
-      title: `Worksheet ${nextTabId + 1}`,
-      content: '',
-      promptOpen: isGenAI,
-      gridData: null,
-      resultsLoading: false,
-      innerTabIndex: 0,
-      splitterOptions: {
-        percentage1: 50,
-        percentage2: 50,
-        minSize1: 100,
-        minSize2: 100,
-        gutterSize: 2,
-        direction: 'vertical',
-        collapseButtonVisible: true,
-        initiallyCollapsed: true,
-      },
-    };
-    setTabs((prevTabs) => [...prevTabs, newTab]);
-    setActiveTabIndex(tabs.length);
-    setNextTabId(nextTabId + 1);
+  const handleAddTab = async () => {
+    const new_ws = await createWorksheet({
+      workbookId: workbookId,
+      name: `Worksheet ${nextTabNumber}`,
+      editorText: "",
+      designConfig: ""
+    });
+    if (new_ws.worksheetId) {
+      const newTab = {
+        id: new_ws.worksheetId,
+        title: `Worksheet ${nextTabNumber}`,
+        content: '',
+        promptOpen: isGenAI,
+        gridData: null,
+        resultsLoading: false,
+        innerTabIndex: 0,
+        splitterOptions: {
+          percentage1: 50,
+          percentage2: 50,
+          minSize1: 100,
+          minSize2: 100,
+          gutterSize: 2,
+          direction: 'vertical',
+          collapseButtonVisible: true,
+          initiallyCollapsed: true,
+        },
+      };
+      setTabs((prevTabs) => [...prevTabs, newTab]);
+      setActiveTabIndex(tabs.length);
+      setNextTabNumber(nextTabNumber + 1);
+    } else {
+      alert('problem creating tab');
+    }
   };
 
-  const handleDeleteTab = (tabId) => {
+  const handleDeleteTab = async (tabId) => {
     const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
-    const updatedTabs = tabs.filter((tab) => tab.id !== tabId);
 
-    if (updatedTabs.length === 0) {
-      setActiveTabIndex(0);
-    } else if (tabIndex <= activeTabIndex) {
-      setActiveTabIndex(Math.max(0, activeTabIndex - 1));
+    const delete_tab_res = await deleteWorksheet(tabId);
+    if (delete_tab_res === "ok") {
+      const updatedTabs = tabs.filter((tab) => tab.id !== tabId);
+      if (updatedTabs.length === 0) {
+        setActiveTabIndex(0);
+      } else if (tabIndex <= activeTabIndex) {
+        setActiveTabIndex(Math.max(0, activeTabIndex - 1));
+      }
+      setTabs(updatedTabs);
     }
-
-    setTabs(updatedTabs);
   };
 
   const handleCopyQuery = () => {
@@ -359,10 +372,30 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
   };
 
   // Add the handler function
-  const handleTabTitleChange = (tabId, newTitle) => {
-    setTabs((prevTabs) =>
-      prevTabs.map((tab) => (tab.id === tabId ? { ...tab, title: newTitle } : tab))
-    );
+  const handleTabTitleChange = async (tabId, newTitle) => {
+    const tab_name_update_res = await updateWorksheet(tabId, {
+      name: newTitle
+    });
+    if (tab_name_update_res === "ok") {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => (tab.id === tabId ? { ...tab, title: newTitle } : tab))
+      );
+    } else {
+      alert('problem updating tab name');
+    }
+  };
+
+  const handleTabEditorContentChange = async (tabId, newContent) => {
+    const tab_editorcontent_update_res = await updateWorksheet(tabId, {
+      editorText: newContent
+    });
+    if (tab_editorcontent_update_res === "ok") {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => (tab.id === tabId ? { ...tab, content: newContent } : tab))
+      );
+    } else {
+      alert('problem updating tab editor content');
+    }
   };
 
   return (
@@ -404,6 +437,7 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
+                              handleTabTitleChange(tab.id, tab.title);
                               setEditingTabId(null);
                             }
                           }}
@@ -468,9 +502,9 @@ const StepQuery = ({ selectedSource, queryData, setQueryData, optionType, tabs, 
                   {/* SQL Editor */}
                   <SQLEditor
                     value={tab.content}
-                    onBlur={(value) => setTabs((prevTabs) =>
-                      prevTabs.map((tab, i) => (i === activeTabIndex ? { ...tab, content: value } : tab))
-                    )}
+                    onBlur={(value) => {
+                      handleTabEditorContentChange(tab.id, value);
+                    }}
                     onCreateEditor={(editor) => {
                       editorRefs.current[tab.id] = editor; // Store the editor instance
                     }}
