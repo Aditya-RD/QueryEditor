@@ -34,6 +34,8 @@ import LeftArrow from './assets/images/left-arrow-navigator.svg';
 import { executeQueryService } from './services/executeQuery.js';
 import { genAiService } from './services/genAiService.js';
 import { createWorksheet, deleteWorksheet, updateWorksheet } from './services/worksheets.js';
+import SettingIcon from './assets/images/Tile View.svg';
+import * as XLSX from 'xlsx';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
   const editorRef = useRef(null);
@@ -398,6 +400,56 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
     }
   };
 
+  //ExcelDownload
+  const handleDownloadQuery = () => {
+    const activeTab = tabs[activeTabIndex];
+    let dataToDownload = [];
+    let sheetName = '';
+
+    switch (activeTab.innerTabIndex) {
+      case 0: // Saved Queries
+        dataToDownload = [/* Add your saved queries data here as objects */];
+        sheetName = 'SavedQueries';
+        break;
+      case 1: // Executed Queries
+        dataToDownload = [/* Add your executed queries data here as objects */];
+        sheetName = 'ExecutedQueries';
+        break;
+      case 2: // Result
+        if (activeTab.gridData) {
+          dataToDownload = activeTab.gridData.rows; // Assume this is an array of objects representing each row
+          sheetName = 'Results';
+        } else {
+          alert('No data to export in Results');
+          return;
+        }
+        break;
+      default:
+        alert('No data available for export');
+        return;
+    }
+
+    if (dataToDownload.length === 0) {
+      alert('No data available for export');
+      return;
+    }
+
+    // Generate a worksheet from the data array
+    const worksheet = XLSX.utils.json_to_sheet(dataToDownload);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Generate and download Excel file
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    const element = document.createElement('a');
+    element.href = URL.createObjectURL(blob);
+    element.download = `${activeTab.title}_${sheetName}.xlsx`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%' }}>
       <FlexiSplit
@@ -570,6 +622,12 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                     <Tab label="Executed Queries" />
                     <Tab label="Result" />
                   </Tabs>
+                  <div style={{ position: 'absolute', right: '50px' }}>
+                    <IconButton><img src={SettingIcon} alt="FileSettingIcon" title="Setting" style={{ height: '27px' }} /></IconButton>
+                  </div>
+                  <div style={{ position: 'absolute', right: '10px' }}>
+                    <IconButton onClick={handleDownloadQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '25px' }} /></IconButton>
+                  </div>
                   <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {tab.innerTabIndex === 0 && (
                       // Content for Saved Queries
@@ -593,6 +651,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                                 headerName: col.columnName,
                                 field: col.columnName,
                                 type: col.dataType === 'integer' ? 'numericColumn' : 'textColumn',
+                                headerClass: 'custom-header',
                               }))}
                               rowData={tab.gridData.rows}
                             />

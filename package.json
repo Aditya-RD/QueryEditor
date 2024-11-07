@@ -23,6 +23,7 @@
     "bootstrap": "^5.3.3",
     "codemirror": "^6.0.1",
     "dayjs": "^1.11.13",
+    "moment": "^2.30.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
@@ -30,7 +31,8 @@
     "react-treebeard": "^3.2.4",
     "split.js": "^1.6.5",
     "sql-formatter": "^15.4.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",

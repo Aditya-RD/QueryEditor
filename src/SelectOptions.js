@@ -18,6 +18,8 @@ import CodeIcon from '@mui/icons-material/Code';
 import { useNavigate } from 'react-router-dom';
 import magicwand from './magic-wand.png';
 import { getWorkbooks, deleteWorkbook } from './services/workbooks';
+import './SelectOption.css';
+import moment from 'moment';
 
 function SelectOptions() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -64,6 +66,19 @@ function SelectOptions() {
       row.ModifiedBy.toLowerCase().includes(searchTerm)
     ),
     [rowData, searchTerm]
+  );
+
+  const NameCellRenderer = ({ value, data }) => (
+    <a
+      href="#"
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(`/custom-query/${data.WorkbookID}`);
+      }}
+      style={{ color: '#007bff', textDecoration: 'none' }}
+    >
+      {value}
+    </a>
   );
 
   return (
@@ -113,11 +128,19 @@ function SelectOptions() {
           <AgGridReact
             rowData={filteredData}
             columnDefs={[
-              { field: 'Name', headerName: 'Name', sortable: true, filter: true, width: 400 },
+              { field: 'Name', headerName: 'Name', sortable: true, filter: true, width: 400, cellRenderer: NameCellRenderer },
               { field: 'CreatedBy', headerName: 'Created By', sortable: true, filter: true },
-              { field: 'Timestamp', headerName: 'Created On', sortable: true, filter: true },
+              {
+                field: 'Timestamp', headerName: 'Created On', sortable: true, filter: true, valueFormatter: (params) => {
+                  return moment(params.value).format('DD-MMM-YYYY, hh:mm:ss A'); // 'A' for AM/PM in uppercase
+                }
+              },
               { field: 'ModifiedBy', headerName: 'Modified By', sortable: true, filter: true },
-              { field: 'Timestamp', headerName: 'Modified On', sortable: true, filter: true },
+              {
+                field: 'Timestamp', headerName: 'Modified On', sortable: true, filter: true, valueFormatter: (params) => {
+                  return moment(params.value).format('DD-MMM-YYYY, hh:mm:ss A'); // 'A' for AM/PM in uppercase
+                }
+              },
             ]}
             rowSelection={{ type: 'single' }}
             pagination={true}

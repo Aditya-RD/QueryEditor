@@ -1,3 +1,6 @@
 .cm-theme-light .cm-editor {
     height: 100%;
 }
+.custom-header {
+    border-bottom: 2px solid #1976d2
+}
