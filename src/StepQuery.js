@@ -31,10 +31,11 @@ import RefreshIcon from './assets/images/refresh.svg';
 import SearchIcon from './assets/images/search.svg';
 import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
+import SettingIcon from './assets/images/Tile View.svg';
+import SaveIcon from './assets/images/save-icon.svg';
 import { executeQueryService } from './services/executeQuery.js';
 import { genAiService } from './services/genAiService.js';
 import { createWorksheet, deleteWorksheet, updateWorksheet } from './services/worksheets.js';
-import SettingIcon from './assets/images/Tile View.svg';
 import * as XLSX from 'xlsx';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
@@ -246,7 +247,28 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
   };
 
   const handleCopyQuery = () => {
-    navigator.clipboard.writeText(tabs[activeTabIndex].content);
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    // Get the current document and selection from the editor
+    const { state } = editor;
+    const selection = state.selection.main;
+
+    let queryText = '';
+
+    if (!selection.empty) {
+      // If text is selected, use the selected text
+      queryText = state.doc.sliceString(selection.from, selection.to);
+    } else {
+      // If no text is selected, use the entire content
+      queryText = state.doc.toString();
+    }
+    navigator.clipboard.writeText(queryText);
     alert('Query copied to clipboard');
   };
 
@@ -288,19 +310,69 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
   };
 
   const handleExportQuery = () => {
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    // Get the current document and selection from the editor
+    const { state } = editor;
+    const selection = state.selection.main;
+
+    let queryText = '';
+
+    if (!selection.empty) {
+      // If text is selected, use the selected text
+      queryText = state.doc.sliceString(selection.from, selection.to);
+    } else {
+      // If no text is selected, use the entire content
+      queryText = state.doc.toString();
+    }
+
+    // Create a Blob from the query text and initiate download
     const element = document.createElement('a');
-    const file = new Blob([tabs[activeTabIndex].content], { type: 'text/plain' });
+    const file = new Blob([queryText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${tabs[activeTabIndex].title}.txt`;
+    element.download = `${activeTab.title}_query.txt`; // Customize the file name as needed
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
 
   const handleClearEditor = () => {
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    const { state, dispatch } = editor;
+    const selection = state.selection.main;
+
+    let from = 0;
+    let to = state.doc.length;
+
+    if (!selection.empty) {
+      // Text is selected
+      from = selection.from;
+      to = selection.to;
+    }
+
+    // Clear selected text or entire content if nothing is selected
+    dispatch({
+      changes: { from, to, insert: '' },
+    });
+
+    // Update the state with the available text in the editor
+    const updatedText = state.doc.sliceString(0, state.doc.length);
     setTabs((prevTabs) =>
       prevTabs.map((tab, index) =>
-        index === activeTabIndex ? { ...tab, content: '' } : tab
+        index === activeTabIndex ? { ...tab, content: updatedText } : tab
       )
     );
   };
@@ -401,7 +473,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
   };
 
   //ExcelDownload
-  const handleDownloadQuery = () => {
+  const handleDownloadQueryResult = () => {
     const activeTab = tabs[activeTabIndex];
     let dataToDownload = [];
     let sheetName = '';
@@ -448,6 +520,31 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  //SaveQuery
+  const handleSaveQuery = () => {
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    const { state } = editor;
+    const selection = state.selection.main;
+
+    let queryText = '';
+
+    if (!selection.empty) {
+      // Text is selected
+      queryText = state.doc.sliceString(selection.from, selection.to);
+    } else {
+      // No text selected; use entire content
+      queryText = state.doc.toString();
+    }
+    alert('Query saved successfully');
   };
 
   return (
@@ -526,6 +623,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
             </Tabs>
             <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
               <IconButton onClick={handlePrettyPrintQuery}><img src={FormatAlignLeftIcon} alt="FormatAlignLeftIcon" title="Pretty Print" style={{ height: '20px' }} /></IconButton>
+              <IconButton onClick={handleSaveQuery}><img src={SaveIcon} alt="SavequeryIcon" title="Save" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleCopyQuery}><img src={ContentCopyIcon} alt="ContentCopyIcon" title="Copy" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleClearEditor}><img src={ClearIcon} alt="ClearIcon" title="Clear" style={{ height: '14px' }} /></IconButton>
               <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '20px' }} /></IconButton>
@@ -609,25 +707,26 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
 
                 {/* Paneli2 - Tabs with Saved Queries, Executed Queries, and Result */}
                 <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Tabs
-                    value={tab.innerTabIndex}
-                    onChange={(e, newIndex) => {
-                      // Update the innerTabIndex for this tab
-                      setTabs(prevTabs =>
-                        prevTabs.map((t, i) => i === activeTabIndex ? { ...t, innerTabIndex: newIndex } : t)
-                      );
-                    }}
-                  >
-                    <Tab label="Saved Queries" />
-                    <Tab label="Executed Queries" />
-                    <Tab label="Result" />
-                  </Tabs>
-                  <div style={{ position: 'absolute', right: '50px' }}>
-                    <IconButton><img src={SettingIcon} alt="FileSettingIcon" title="Setting" style={{ height: '27px' }} /></IconButton>
-                  </div>
-                  <div style={{ position: 'absolute', right: '10px' }}>
-                    <IconButton onClick={handleDownloadQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '25px' }} /></IconButton>
-                  </div>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
+                    <Tabs
+                      value={tab.innerTabIndex}
+                      onChange={(e, newIndex) => {
+                        // Update the innerTabIndex for this tab
+                        setTabs(prevTabs =>
+                          prevTabs.map((t, i) => i === activeTabIndex ? { ...t, innerTabIndex: newIndex } : t)
+                        );
+                      }}
+                      sx={{ flexGrow: 1 }}
+                    >
+                      <Tab label="Saved Queries" />
+                      <Tab label="Executed Queries" />
+                      <Tab label="Result" />
+                    </Tabs>
+                    <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
+                      <IconButton><img src={SettingIcon} alt="DataProducts Icon" title="CreateDataProduct" style={{ height: '20px' }} /></IconButton>
+                      <IconButton onClick={handleDownloadQueryResult}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download result" style={{ height: '20px' }} /></IconButton>
+                    </Box>
+                  </Box>
                   <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {tab.innerTabIndex === 0 && (
                       // Content for Saved Queries
