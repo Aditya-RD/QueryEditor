@@ -1,6 +1,6 @@
-const API_HOST = 'http://localhost:5000/'
+const API_HOST = 'http://localhost:4000/'
 
-export const createWorksheetExecutedQuery = async ({payload={}}) => {
+export const createWorksheetExecutedQuery = async (payload={}) => {
     try {
         const response = await fetch(
             API_HOST+`executed-queries`,
@@ -13,9 +13,8 @@ export const createWorksheetExecutedQuery = async ({payload={}}) => {
             }
         );
         
-        const result = await response.json();
-        if (result) {
-            return result;
+        if (response.ok) {
+            return 'ok';
         } else {
             throw new Error('Failed to retrieve data');
         }
@@ -46,7 +45,7 @@ export const getWorksheetExecutedQueries = async (worksheetId) => {
     }
 };
 
-export const updateWorksheetExecutedQuery = async ({QueryId=null,payload={}}) => {
+export const updateWorksheetExecutedQuery = async (QueryId=null,payload={}) => {
     try {
         const response = await fetch(
             API_HOST+`executed-queries/${QueryId}`,
@@ -79,8 +78,7 @@ export const deleteWorksheetExecutedQuery = async (QueryId) => {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                }
             }
         );
         

@@ -33,11 +33,14 @@ import MenuIcon from './assets/images/right-arrow-navigator.svg';
 import LeftArrow from './assets/images/left-arrow-navigator.svg';
 import SettingIcon from './assets/images/Tile View.svg';
 import SaveIcon from './assets/images/save-icon.svg';
+import UploadIcon from './assets/images/upload-icon.svg';
 import { executeQueryService } from './services/executeQuery.js';
 import { genAiService } from './services/genAiService.js';
 import { createWorksheet, deleteWorksheet, updateWorksheet } from './services/worksheets.js';
 import { getWorksheetExecutedQueries } from './services/executedQueries.js';
 import { getWorksheetSavedQueries } from './services/savedQueries.js';
+import { createWorksheetExecutedQuery } from './services/executedQueries.js';
+import { createWorksheetSavedQuery } from './services/savedQueries.js';
 import * as XLSX from 'xlsx';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
@@ -75,25 +78,6 @@ const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
   );
 };
 
-// New function to execute the query and fetch results
-const executeQuery = async (queryText) => {
-  try {
-
-    const result = await executeQueryService({ queryText: queryText });
-    if (result.flag && result.data && result.columns) {
-      return {
-        columns: JSON.parse(result.columns),
-        rows: JSON.parse(result.data)
-      };
-    } else {
-      throw new Error('Failed to retrieve data');
-    }
-  } catch (error) {
-    console.error('Query execution failed:', error);
-    return null;
-  }
-};
-
 // StepQuery component begins here
 const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, optionType, tabs, setTabs, activeTabIndex, setActiveTabIndex, nextTabNumber, setNextTabNumber }) => {
   const isGenAI = optionType === 'gen-ai';
@@ -101,6 +85,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
 
   const [loading, setLoading] = useState(false);
   const editorRefs = useRef({});
+  const fileInputRef = useRef(null);
 
   const [parentSplitOptions] = useState({
     percentage1: 70,
@@ -348,6 +333,96 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
     document.body.removeChild(element);
   };
 
+  // New function to execute the query and fetch results
+  const executeQuery = async (queryText) => {
+    try {
+      const activeTab = tabs[activeTabIndex];
+      const result = await executeQueryService({ queryText: queryText });
+      if (result.flag && result.data && result.columns) {
+        await createWorksheetExecutedQuery({
+          worksheetId: activeTab.id,
+          queryText: queryText,
+          executionResult: "success"
+        })
+        return {
+          columns: JSON.parse(result.columns),
+          rows: JSON.parse(result.data)
+        };
+      } else {
+        await createWorksheetExecutedQuery({
+          worksheetId: activeTab.id,
+          queryText: queryText,
+          executionResult: "failed"
+        })
+        throw new Error('Failed to retrieve data');
+      }
+    } catch (error) {
+      console.error('Query execution failed:', error);
+      return null;
+    }
+  };
+
+  //Fileupload
+  const handleUploadQuery = () => {
+    // Trigger the file input click when the IconButton is clicked
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  //UploadQuery
+  const handleFileUpload = (event) => {
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    if (!event.target.files || event.target.files.length === 0) {
+      console.error('No file selected');
+      return;
+    }
+
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const uploadedQuery = e.target.result;
+
+      // Get the current content of the editor
+      const currentContent = editor.state.doc.toString();
+
+      // Combine current content with uploaded content, adding a newline if necessary
+      const newContent = currentContent
+        ? `${currentContent}\n${uploadedQuery}`
+        : uploadedQuery;
+
+      // Update the editor content
+      const { dispatch } = editor;
+      dispatch({
+        changes: {
+          from: 0,
+          to: editor.state.doc.length,
+          insert: newContent,
+        },
+      });
+
+      // Update the tab's content in state
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id ? { ...tab, content: newContent } : tab
+        )
+      );
+    };
+
+    reader.readAsText(file);
+
+    // Reset file input to allow re-uploading the same file if needed
+    event.target.value = '';
+  };
+
   const handleClearEditor = () => {
     const activeTab = tabs[activeTabIndex];
     const editor = editorRefs.current[activeTab.id];
@@ -539,7 +614,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
   };
 
   //SaveQuery
-  const handleSaveQuery = () => {
+  const handleSaveQuery = async () => {
     const activeTab = tabs[activeTabIndex];
     const editor = editorRefs.current[activeTab.id];
 
@@ -560,6 +635,10 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       // No text selected; use entire content
       queryText = state.doc.toString();
     }
+    await createWorksheetSavedQuery({
+      worksheetId: activeTab.id,
+      queryText: queryText
+    })
     alert('Query saved successfully');
   };
 
@@ -576,10 +655,15 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
 
     try {
       const data = await getWorksheetExecutedQueries(worksheetId);
+      const dataMod = data.map((obj) => {
+        obj.ExecutedBy = "Nidhi";
+        obj.ExecutedOn = new Date().toLocaleString();
+        return obj;
+      })
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === activeTab.id
-            ? { ...tab, executedQueriesGridData: data, executedQueriesGridLoading: false }
+            ? { ...tab, executedQueriesGridData: dataMod, executedQueriesGridLoading: false }
             : tab
         )
       );
@@ -606,10 +690,15 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
 
     try {
       const data = await getWorksheetSavedQueries(worksheetId);
+      const dataMod = data.map((obj) => {
+        obj.SavedBy = "Aditya";
+        obj.SavedOn = new Date().toLocaleString();
+        return obj;
+      })
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === activeTab.id
-            ? { ...tab, savedQueriesGridData: data, savedQueriesGridLoading: false }
+            ? { ...tab, savedQueriesGridData: dataMod, savedQueriesGridLoading: false }
             : tab
         )
       );
@@ -618,6 +707,38 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === activeTab.id ? { ...tab, savedQueriesGridLoading: false } : tab
+        )
+      );
+    }
+  };
+
+  const handleCellDoubleClick = (event) => {
+    const activeTab = tabs[activeTabIndex];
+    const editor = editorRefs.current[activeTab.id];
+
+    if (!editor) {
+      console.error('Editor not found for active tab');
+      return;
+    }
+
+    const { data, colDef } = event;
+    // Check if the clicked column is either "Saved Query" or "Executed Result"
+    if (colDef.field === 'QueryText') {
+      const queryText = data.QueryText;
+
+      // Append the query text to the current content in the editor
+      const currentContent = editor.state.doc.toString();
+      const newContent = `${currentContent}\n${queryText}`;
+
+      const { dispatch } = editor;
+      dispatch({
+        changes: { from: 0, to: editor.state.doc.length, insert: newContent },
+      });
+
+      // Update the state with the new content in the editor
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTab.id ? { ...tab, content: newContent } : tab
         )
       );
     }
@@ -702,9 +823,18 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
               <IconButton onClick={handleSaveQuery}><img src={SaveIcon} alt="SavequeryIcon" title="Save" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleCopyQuery}><img src={ContentCopyIcon} alt="ContentCopyIcon" title="Copy" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleClearEditor}><img src={ClearIcon} alt="ClearIcon" title="Clear" style={{ height: '14px' }} /></IconButton>
-              <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '20px' }} /></IconButton>
+              <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download Query" style={{ height: '20px' }} /></IconButton>
+              <IconButton onClick={handleUploadQuery}><img src={UploadIcon} alt="UploadIconIcon" title="Upload Query" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleRunQuery}><img src={PlayArrowIcon} alt="PlayArrowIcon" title="Run Query" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleToggleParentCollapse}><img src={MenuIcon} alt="MenuIcon" title="Navigator" style={{ height: '16px' }} /></IconButton>
+              {/* Hidden file input */}
+              <input
+                type="file"
+                accept=".txt"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
             </Box>
           </Box>
           {tabs.map((tab, index) => (
@@ -812,8 +942,8 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                       <Tab label="Result" />
                     </Tabs>
                     <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
-                      <IconButton><img src={SettingIcon} alt="DataProducts Icon" title="CreateDataProduct" style={{ height: '20px' }} /></IconButton>
-                      <IconButton onClick={handleDownloadQueryResult}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download result" style={{ height: '20px' }} /></IconButton>
+                      <IconButton><img src={SettingIcon} alt="DataProductsIcon" title="Create Data Product" style={{ height: '20px' }} /></IconButton>
+                      <IconButton onClick={handleDownloadQueryResult}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download" style={{ height: '20px' }} /></IconButton>
                     </Box>
                   </Box>
                   <div style={{ flexGrow: 1, overflowY: 'auto' }}>
@@ -827,11 +957,12 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                           tab.savedQueriesGridData ? (
                             <AgGridReact
                               columnDefs={[
-                                { headerName: 'Saved Query', field: 'QueryText' },
-                                { headerName: 'Saved By', field: 'savedBy' },
-                                { headerName: 'Saved On', field: 'savedOn' },
+                                { headerName: 'Saved Query', field: 'QueryText', width: '500px' },
+                                { headerName: 'Saved By', field: 'SavedBy' },
+                                { headerName: 'Saved On', field: 'SavedOn' },
                               ]}
                               rowData={tab.savedQueriesGridData}
+                              onCellDoubleClicked={handleCellDoubleClick} // Add this prop
                             />
                           ) : (
                             <div>No saved queries available.</div>
@@ -849,12 +980,13 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                           tab.executedQueriesGridData ? (
                             <AgGridReact
                               columnDefs={[
-                                { headerName: 'Executed Result', field: 'QueryText' },
+                                { headerName: 'Executed Result', field: 'QueryText', width: '500px' },
                                 { headerName: 'Execution Result', field: 'ExecutionResult' },
-                                { headerName: 'Executed By', field: 'executedBy' },
-                                { headerName: 'Executed On', field: 'executedOn' },
+                                { headerName: 'Executed By', field: 'ExecutedBy' },
+                                { headerName: 'Executed On', field: 'ExecutedOn' },
                               ]}
                               rowData={tab.executedQueriesGridData}
+                              onCellDoubleClicked={handleCellDoubleClick} // Add this prop
                             />
                           ) : (
                             <div>No executed queries available.</div>

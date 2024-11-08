@@ -1,4 +1,4 @@
-const API_URL = 'https://dx-qast.getrightdata.com/dbexplorer/services/run-query';
+const API_URL = 'https://dx-uat.getrightdata.com/dbexplorer/services/run-query';
 const BEARER_TOKEN = process.env.REACT_APP_BEARER_TOKEN;
 
 export const executeQueryService = async ({ queryText = null }) => {
@@ -17,10 +17,13 @@ export const executeQueryService = async ({ queryText = null }) => {
                         type: "MSSQL",
                         profileId: null,
                         connectionInfo: {
-                            catalog: null,
-                            connectionId: 1,
-                            existingConnection: true,
-                            schema: null
+                            catalog : null,
+                            className : "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+                            connectionJDBCURL : "jdbc:sqlserver://10.10.20.203:1433",
+                            existingConnection : false,
+                            password : "J93EmKePkG/M9kzQTUxqcg==",
+                            schema :  null,
+                            username : "rd_db_load",
                         },
                         sourceInfo: {
                             id: "1",

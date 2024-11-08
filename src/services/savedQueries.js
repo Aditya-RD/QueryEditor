@@ -1,6 +1,6 @@
-const API_HOST = 'http://localhost:5000/'
+const API_HOST = 'http://localhost:4000/'
 
-export const createWorksheetSavedQuery = async ({payload={}}) => {
+export const createWorksheetSavedQuery = async (payload={}) => {
     try {
         const response = await fetch(
             API_HOST+`saved-queries`,
@@ -12,10 +12,8 @@ export const createWorksheetSavedQuery = async ({payload={}}) => {
                 body: JSON.stringify(payload)
             }
         );
-        
-        const result = await response.json();
-        if (result) {
-            return result;
+        if (response.ok) {
+            return 'ok';
         } else {
             throw new Error('Failed to retrieve data');
         }
@@ -79,8 +77,7 @@ export const deleteWorksheetSavedQuery = async (QueryId) => {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                }
             }
         );
         

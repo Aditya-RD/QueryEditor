@@ -1,4 +1,4 @@
-const API_URL = 'https://dx-qast.getrightdata.com/dweb/connections/jdbc/all';
+const API_URL = 'https://dx-uat.getrightdata.com/dweb/connections/jdbc/all';
 const BEARER_TOKEN = process.env.REACT_APP_BEARER_TOKEN;
 
 export const listOfProfiles = async () => {

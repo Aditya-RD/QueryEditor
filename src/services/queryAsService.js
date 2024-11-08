@@ -1,4 +1,4 @@
-const API_URL = 'https://dx-qast.getrightdata.com/dweb/queryasservice';
+const API_URL = 'https://dx-uat.getrightdata.com/dweb/queryasservice';
 const BEARER_TOKEN = process.env.REACT_APP_BEARER_TOKEN;
 
 export const queryAsService = async ({selectedsource=null, schema=null, catalog=null, sourceinfo={}, purpose=null,objecttype=null}) => {
