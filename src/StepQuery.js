@@ -10,6 +10,12 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DatabaseTree from './DatabaseTree';
 import CodeMirror from '@uiw/react-codemirror';
@@ -97,6 +103,8 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
     collapseButtonVisible: false,
     initiallyCollapsed: true,
   });
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [queryName, setQueryName] = useState('');
 
   const parentFlexiSplitRef = useRef(null);
   const childFlexiSplitRefs = useRef({});
@@ -614,7 +622,16 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
   };
 
   //SaveQuery
-  const handleSaveQuery = async () => {
+  const handleOpenSaveDialog = () => {
+    setQueryName(''); // Reset the input field
+    setSaveDialogOpen(true);
+  };
+
+  const handleCloseSaveDialog = () => {
+    setSaveDialogOpen(false);
+  };
+
+  const handleConfirmSaveQuery = async () => {
     const activeTab = tabs[activeTabIndex];
     const editor = editorRefs.current[activeTab.id];
 
@@ -635,12 +652,53 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       // No text selected; use entire content
       queryText = state.doc.toString();
     }
-    await createWorksheetSavedQuery({
-      worksheetId: activeTab.id,
-      queryText: queryText
-    })
-    alert('Query saved successfully');
+
+    if (queryName.trim() === '') {
+      alert('Query Name is required!');
+      return;
+    }
+
+    try {
+      await createWorksheetSavedQuery({
+        worksheetId: activeTab.id,
+        queryText: queryText,
+        queryName: queryName.trim(),
+      });
+      alert('Query saved successfully');
+    } catch (error) {
+      console.error('Failed to save query:', error);
+      alert('Error saving query');
+    } finally {
+      handleCloseSaveDialog();
+    }
   };
+  // const handleSaveQuery = async () => {
+  //   const activeTab = tabs[activeTabIndex];
+  //   const editor = editorRefs.current[activeTab.id];
+
+  //   if (!editor) {
+  //     console.error('Editor not found for active tab');
+  //     return;
+  //   }
+
+  //   const { state } = editor;
+  //   const selection = state.selection.main;
+
+  //   let queryText = '';
+
+  //   if (!selection.empty) {
+  //     // Text is selected
+  //     queryText = state.doc.sliceString(selection.from, selection.to);
+  //   } else {
+  //     // No text selected; use entire content
+  //     queryText = state.doc.toString();
+  //   }
+  //   await createWorksheetSavedQuery({
+  //     worksheetId: activeTab.id,
+  //     queryText: queryText
+  //   })
+  //   alert('Query saved successfully');
+  // };
 
   // Handlers for fetching executed queries
   const fetchExecutedQueries = async (worksheetId) => {
@@ -657,7 +715,6 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       const data = await getWorksheetExecutedQueries(worksheetId);
       const dataMod = data.map((obj) => {
         obj.ExecutedBy = "Nidhi";
-        obj.ExecutedOn = new Date().toLocaleString();
         return obj;
       })
       setTabs((prevTabs) =>
@@ -692,7 +749,6 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
       const data = await getWorksheetSavedQueries(worksheetId);
       const dataMod = data.map((obj) => {
         obj.SavedBy = "Aditya";
-        obj.SavedOn = new Date().toLocaleString();
         return obj;
       })
       setTabs((prevTabs) =>
@@ -820,7 +876,8 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
             </Tabs>
             <Box display="flex" alignItems="center" gap={1} paddingRight={2}>
               <IconButton onClick={handlePrettyPrintQuery}><img src={FormatAlignLeftIcon} alt="FormatAlignLeftIcon" title="Pretty Print" style={{ height: '20px' }} /></IconButton>
-              <IconButton onClick={handleSaveQuery}><img src={SaveIcon} alt="SavequeryIcon" title="Save" style={{ height: '20px' }} /></IconButton>
+              {/* <IconButton onClick={handleSaveQuery}><img src={SaveIcon} alt="SavequeryIcon" title="Save" style={{ height: '20px' }} /></IconButton> */}
+              <IconButton onClick={handleOpenSaveDialog}><img src={SaveIcon} alt="SavequeryIcon" title="Save" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleCopyQuery}><img src={ContentCopyIcon} alt="ContentCopyIcon" title="Copy" style={{ height: '20px' }} /></IconButton>
               <IconButton onClick={handleClearEditor}><img src={ClearIcon} alt="ClearIcon" title="Clear" style={{ height: '14px' }} /></IconButton>
               <IconButton onClick={handleExportQuery}><img src={FileDownloadIcon} alt="FileDownloadIcon" title="Download Query" style={{ height: '20px' }} /></IconButton>
@@ -957,9 +1014,10 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                           tab.savedQueriesGridData ? (
                             <AgGridReact
                               columnDefs={[
+                                { headerName: 'Query Name', field: 'QueryName', width: '300px' },
                                 { headerName: 'Saved Query', field: 'QueryText', width: '500px' },
                                 { headerName: 'Saved By', field: 'SavedBy' },
-                                { headerName: 'Saved On', field: 'SavedOn' },
+                                { headerName: 'Saved On', field: 'Timestamp' },
                               ]}
                               rowData={tab.savedQueriesGridData}
                               onCellDoubleClicked={handleCellDoubleClick} // Add this prop
@@ -980,10 +1038,10 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                           tab.executedQueriesGridData ? (
                             <AgGridReact
                               columnDefs={[
-                                { headerName: 'Executed Result', field: 'QueryText', width: '500px' },
+                                { headerName: 'Executed Query', field: 'QueryText', width: '500px' },
                                 { headerName: 'Execution Result', field: 'ExecutionResult' },
                                 { headerName: 'Executed By', field: 'ExecutedBy' },
-                                { headerName: 'Executed On', field: 'ExecutedOn' },
+                                { headerName: 'Executed On', field: 'Timestamp' },
                               ]}
                               rowData={tab.executedQueriesGridData}
                               onCellDoubleClicked={handleCellDoubleClick} // Add this prop
@@ -1036,6 +1094,43 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
           <DatabaseTree selectedSourceName={selectedSource.name} onDragStart={(e, tablePath) => e.dataTransfer.setData('text/plain', tablePath)} />
         </div>
       </FlexiSplit>
+      {/* Save Query Dialog */}
+      <Dialog
+        open={saveDialogOpen}
+        onClose={handleCloseSaveDialog}
+        maxWidth="md" // Sets the maximum width of the dialog
+        fullWidth // Makes the dialog take the full width up to the maxWidth
+        PaperProps={{
+          sx: { // Custom styles for the dialog box
+            width: '600px', // Adjust width as needed
+            height: '300px', // Adjust height as needed
+            padding: '20px', // Add padding for a better look
+            borderRadius: '12px', // Rounded corners
+          },
+        }}
+      >
+        <DialogTitle>Save Query</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Query Name"
+            value={queryName}
+            onChange={(e) => setQueryName(e.target.value)}
+            fullWidth
+            variant="outlined"
+            autoFocus
+            sx={{
+              marginTop: '20px'
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSaveDialog}>Cancel</Button>
+          <Button onClick={handleConfirmSaveQuery} variant="contained" color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </div>
   );
 };
