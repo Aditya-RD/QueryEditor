@@ -73,13 +73,17 @@ function SelectOptions() {
       href="#"
       onClick={(e) => {
         e.preventDefault();
-        navigate(`/custom-query/${data.WorkbookID}`);
+        if (data.ModuleType === 'gen-ai') {
+          navigate(`/gen-ai/${data.WorkbookID}`);
+        } else {
+          navigate(`/custom-query/${data.WorkbookID}`);
+        }
       }}
       style={{ color: '#007bff', textDecoration: 'none' }}
     >
       {value}
     </a>
-  );
+  );  
 
   return (
     <Box display="flex" height="100%" bgcolor="#f9fafb">

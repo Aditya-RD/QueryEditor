@@ -1109,7 +1109,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
           },
         }}
       >
-        <DialogTitle>Save Query</DialogTitle>
+        <DialogTitle sx={{padding:'0 0 5px 0', borderBottom:'1px solid blue'}}>Save Query</DialogTitle>
         <DialogContent>
           <TextField
             label="Query Name"
@@ -1119,7 +1119,7 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
             variant="outlined"
             autoFocus
             sx={{
-              marginTop: '20px'
+              marginTop: '40px'
             }}
           />
         </DialogContent>
