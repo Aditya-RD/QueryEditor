@@ -19,6 +19,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import DatabaseTree from './DatabaseTree';
 import CodeMirror from '@uiw/react-codemirror';
+import { EditorView } from '@codemirror/view';
 import { sql } from '@codemirror/lang-sql';
 import FlexiSplit from './FlexiSplit';
 import { format } from 'sql-formatter';
@@ -51,6 +52,39 @@ import * as XLSX from 'xlsx';
 
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
   const editorRef = useRef(null);
+
+  const dropHandlerExtension = EditorView.domEventHandlers({
+    drop(event, view) {
+      event.preventDefault(); // Prevent the default behavior
+
+      // Get the text being dropped
+      let text = event.dataTransfer.getData('text/plain');
+
+      if (text) {
+        // Get the position in the editor where the drop occurred
+        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+
+        // Check if the editor is empty
+        const isEditorEmpty = view.state.doc.length === 0;
+
+        // Prepare the text to insert
+        const insertText = isEditorEmpty ? `SELECT * FROM ${text}` : text;
+
+        if (pos !== null) {
+          view.dispatch({
+            changes: { from: pos, to: pos, insert: insertText },
+          });
+
+          // Move the cursor to the end of the inserted text
+          view.focus();
+          view.dispatch({
+            selection: { anchor: pos + insertText.length },
+          });
+        }
+      }
+    },
+  });
+
   return (
     <div
       style={{
@@ -63,7 +97,7 @@ const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
     >
       <CodeMirror
         value={value}
-        extensions={[sql()]}
+        extensions={[sql(), dropHandlerExtension]}
         options={{
           lineNumbers: true,
           lineWrapping: true,
