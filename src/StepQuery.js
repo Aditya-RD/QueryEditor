@@ -49,32 +49,55 @@ import { getWorksheetSavedQueries } from './services/savedQueries.js';
 import { createWorksheetExecutedQuery } from './services/executedQueries.js';
 import { createWorksheetSavedQuery } from './services/savedQueries.js';
 import * as XLSX from 'xlsx';
-
+import moment from 'moment';
 const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
   const editorRef = useRef(null);
-
+ 
   const dropHandlerExtension = EditorView.domEventHandlers({
     drop(event, view) {
       event.preventDefault(); // Prevent the default behavior
-
+  
       // Get the text being dropped
       let text = event.dataTransfer.getData('text/plain');
-
+  
       if (text) {
         // Get the position in the editor where the drop occurred
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
-
-        // Check if the editor is empty
-        const isEditorEmpty = view.state.doc.length === 0;
-
-        // Prepare the text to insert
-        const insertText = isEditorEmpty ? `SELECT * FROM ${text}` : text;
-
+  
+        // Get the current editor content
+        const editorContent = view.state.doc.toString().trim();
+  
+        // List of SQL keywords to check
+        const sqlKeywords = [
+          'SELECT', '*', 'FROM', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 
+          'HAVING', 'UNION', 'INTERSECT', 'EXCEPT', 'AND', 'OR', 'LIMIT'
+        ];
+  
+        // Extract the last token by splitting the query into words
+        const tokens = editorContent.split(/\s+/);
+        const lastToken = tokens[tokens.length - 1]?.toUpperCase(); // Last meaningful word
+  
+        // Determine the text to insert based on conditions
+        let insertText = text;
+  
+        // Case 1: Editor is empty
+        if (editorContent === '') {
+          insertText = `SELECT * FROM ${text}`;
+        } 
+        // Case 2: Query ends with a keyword, insert the text as is
+        else if (lastToken && sqlKeywords.includes(lastToken)) {
+          insertText = text;
+        } 
+        // Case 3: Default, prepend SELECT * FROM
+        else {
+          insertText = `SELECT * FROM ${text}`;
+        }
+  
         if (pos !== null) {
           view.dispatch({
             changes: { from: pos, to: pos, insert: insertText },
           });
-
+  
           // Move the cursor to the end of the inserted text
           view.focus();
           view.dispatch({
@@ -84,7 +107,7 @@ const SQLEditor = ({ value, onBlur, onCreateEditor }) => {
       }
     },
   });
-
+  
   return (
     <div
       style={{
@@ -1051,7 +1074,10 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                                 { headerName: 'Query Name', field: 'QueryName', width: '300px' },
                                 { headerName: 'Saved Query', field: 'QueryText', width: '500px' },
                                 { headerName: 'Saved By', field: 'SavedBy' },
-                                { headerName: 'Saved On', field: 'Timestamp' },
+                                { headerName: 'Saved On', field: 'Timestamp', valueFormatter: (params) => {
+                                    return moment(params.value).format('DD-MMM-YYYY, hh:mm:ss A'); // 'A' for AM/PM in uppercase
+                                  } 
+                                },
                               ]}
                               rowData={tab.savedQueriesGridData}
                               onCellDoubleClicked={handleCellDoubleClick} // Add this prop
@@ -1075,7 +1101,10 @@ const StepQuery = ({ workbookId, selectedSource, queryData, setQueryData, option
                                 { headerName: 'Executed Query', field: 'QueryText', width: '500px' },
                                 { headerName: 'Execution Result', field: 'ExecutionResult' },
                                 { headerName: 'Executed By', field: 'ExecutedBy' },
-                                { headerName: 'Executed On', field: 'Timestamp' },
+                                { headerName: 'Executed On', field: 'Timestamp', valueFormatter: (params) => {
+                                    return moment(params.value).format('DD-MMM-YYYY, hh:mm:ss A'); // 'A' for AM/PM in uppercase
+                                  }
+                                },
                               ]}
                               rowData={tab.executedQueriesGridData}
                               onCellDoubleClicked={handleCellDoubleClick} // Add this prop
